@@ -1,5 +1,6 @@
 import numpy as np
 from math import pi
+import os, sys
 
 class material(object):
     def __init__(self):
@@ -35,6 +36,11 @@ class material(object):
         # diff_coef one group
         self.diff_coef_ua = dict()
         # TODO: put whatever else necessary parameters if needed
+
+    def read(self, filename):
+        """Read material date stored in `filename`. """
+        assert os.path.exists(filename), "Material file: " + filename +\
+            " does not exist"
 
     def read_xsec(self,xsec_filename):
         """@brief read cross sections from xml file

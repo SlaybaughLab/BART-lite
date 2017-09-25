@@ -1,14 +1,15 @@
 from nose.tools import *
-from bart_io import mat_io
+from material import material
 
 class TestClass:
 
     @classmethod
     def setup_class(cls):
-        filename = './tests/testData/test_mat.xml'
-        cls.testMat = mat_io(filename)
-    
+        cls.testMat = material()
+
     @raises(AssertionError)
-    def test_mat_io_nofile(self):
-        """ mat_io function returns error if file is no found """
-        mat_io(filename="testdata/badfile.xml")
+    def test_mat_bad_filename(self):
+        """ Reading a bad filename should return an assertion error. """
+        filename = './tests/test_data/badname.xml'
+        self.testMat.read(filename)
+    
