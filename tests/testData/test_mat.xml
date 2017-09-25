@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <data>
+    <material>
+      <name>Testing Material</name>
+      <id>test_mat</id>
+
+      <!-- Material properties -->
+      <prop>
+	<nu E="0.5">34.2</nu>
+      </prop>
+
+      <!-- Cross-section Data -->
+      <xs-data>
+      </xs-data>
+    </material>
+  </data>
