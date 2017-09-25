@@ -6,11 +6,16 @@
 
       <!-- Material properties -->
       <prop>
-	<nu E="0.5">34.2</nu>
+	<nu>2.3</nu>
+	<density>0.9</density>
       </prop>
 
-      <!-- Cross-section Data -->
-      <xs-data>
-      </xs-data>
+      <!-- Group data -->
+      <group_data>
+	<group>
+	  <n>1</n>
+	  <chi>0.85</chi>
+	</group>
+      </group_data>
     </material>
   </data>
