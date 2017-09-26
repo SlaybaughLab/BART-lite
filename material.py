@@ -8,19 +8,40 @@ class _mat():
     def __init__(self, filename, grps):
         """ Constructor of a single material, reads from a provided
         filename and parses the required data from the xml file """
-        
+
+        self.n_grps = 2
+
+        # Get root
         assert os.path.exists(filename), "Material file: " + filename +\
             " does not exist"
-        tree = ET.parse(filename)
-        root = tree.getroot()
+        root = ET.parse(filename).getroot()
 
-        # Read in nu value
-        nu = root.findall(".//prop/nu")
-        if len(nu) > 1:
-            warnings.warn("Multiple nu values, taking first found: " + nu[0].text)
-            
-        self.nu = float(nu[0].text)
+        # Get correct group structure root
+        g_root = root.findall(".//grp_struct/[n='" + str(grps) + "']")
+        assert g_root, "Group structure not found"
+        
+        # Read in properties
+        self.nu = float(self.__read_prop__(root, 'nu'))
+        
+        # Read in cross-sections
+        self.sig_t = self.__read_xsec__(g_root, 'sig_t')
+        
 
+    def __read_prop__(self, root, prop):
+        """Returns the given material property, in "prop" element, expects
+        only one value, will throw a warning if multiples are found
+        """
+        child = root.findall(".//prop/" + str(prop))
+        if len(child) > 1:
+            warnings.warn("Multiple values for " + str(prop)
+                          + ", taking first found: " + child[0].text)
+        return child[0].text
+
+    def __read_xsec__(self, g_root, xsec):
+        """ Access cross-section data, stored a string, with values separated
+        by commas"""
+        return np.array(map(float,g_root[0].findall(xsec)[0].text.split(',')))
+        
 class material(object):
     def __init__(self):
         '''@brief constructor of material class

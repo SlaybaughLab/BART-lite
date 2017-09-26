@@ -13,8 +13,8 @@
       <grp_structures>
 	<grp_struct>
 	  <n>2</n>
-	  <sig_t>[20.0, 30.0]</sig_t>
-	  <sig_a>[10.0, 40.0]</sig_a>
+	  <sig_t>20.0, 30.0</sig_t>
+	  <sig_a>10.0, 40.0</sig_a>
 	</grp_struct>
       </grp_structures>
 
