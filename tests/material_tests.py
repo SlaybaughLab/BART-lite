@@ -20,20 +20,18 @@ class TestClass:
 
     def test_mat_read(self):
         """ Reading a file should save the correct values to class vars. """
-        ok_(type(self.testmat.nu) == float, "Nu should be a float")
-        ok_(self.testmat.nu == 2.3, "Nu should be the correct value")
-        ok_(type(self.testmat.sig_t) == np.ndarray, "Cross-section should be a numpy array")
-        ok_(np.all(self.testmat.sig_t == [20.0, 30.0]), "Cross-sections should have correct values")
-        ok_(type(self.testmat.sig_a) == np.ndarray, "Cross-section should be a numpy array")
-        ok_(np.all(self.testmat.sig_a == [10.0, 40.0]), "Cross-sections should have correct values")
+        ok_(type(self.testmat.prop["nu"]) == float, "Nu should be a float")
+        ok_(self.testmat.prop["nu"] == 2.3, "Nu should be the correct value")
+        ok_(type(self.testmat.xsec['sig_t']) == np.ndarray, "Cross-section should be a numpy array")
+        ok_(np.all(self.testmat.xsec['sig_t'] == [20.0, 30.0]), "Cross-sections should have correct values")
 
     def test_mat_issource(self):
         ok_(self.testmat.isSource, "Fission material be marked as a source")
         ok_(not self.testNSmat.isSource, "Non source material should be marked as a non-source")
         
-    @raises(AssertionError)
+    @raises(KeyError)
     def test_mat_bad_structure(self):
         """ Specifying a group structure not in the material file should return
-        an error """
+        a Key error """
         filename = './tests/testData/test_mat.xml'
         badMat = _mat(filename, grps = 3)

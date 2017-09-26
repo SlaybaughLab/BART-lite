@@ -11,8 +11,7 @@
 
       <!-- Group data -->
       <grp_structures>
-	<grp_struct>
-	  <n>2</n>
+	<grp_struct n='2'>
 	  <sig_t>20.0, 30.0</sig_t>
 	  <sig_a>10.0, 40.0</sig_a>
 	  <sig_f>50.0, 60.0</sig_f>
