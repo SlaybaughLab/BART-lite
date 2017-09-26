@@ -6,7 +6,6 @@
 
       <!-- Material properties -->
       <prop>
-	<nu>2.3</nu>
       </prop>
 
       <!-- Group data -->
@@ -15,7 +14,6 @@
 	  <n>2</n>
 	  <sig_t>20.0, 30.0</sig_t>
 	  <sig_a>10.0, 40.0</sig_a>
-	  <sig_f>50.0, 60.0</sig_f>
 	</grp_struct>
       </grp_structures>
 

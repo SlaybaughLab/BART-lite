@@ -22,20 +22,26 @@ class _mat():
         
         # Read in properties
         self.nu = float(self.__read_prop__(root, 'nu'))
+
+        # Set fissionable flag
+        self.isSource = True if self.nu else False
         
         # Read in cross-sections
         self.sig_t = self.__read_xsec__(g_root, 'sig_t')
+        self.sig_a = self.__read_xsec__(g_root, 'sig_a')
+
         
 
     def __read_prop__(self, root, prop):
         """Returns the given material property, in "prop" element, expects
-        only one value, will throw a warning if multiples are found
+        only one value, will throw a warning if multiples are found and returns
+        0 if no property is given
         """
         child = root.findall(".//prop/" + str(prop))
         if len(child) > 1:
             warnings.warn("Multiple values for " + str(prop)
                           + ", taking first found: " + child[0].text)
-        return child[0].text
+        return child[0].text if len(child) > 0 else 0
 
     def __read_xsec__(self, g_root, xsec):
         """ Access cross-section data, stored a string, with values separated

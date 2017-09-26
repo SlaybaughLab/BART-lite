@@ -8,7 +8,9 @@ class TestClass:
     @classmethod
     def setup_class(cls):
         filename = './tests/testData/test_mat.xml'
+        NSfile = './tests/testData/test_mat_nonsource.xml'
         cls.testmat = _mat(filename, grps = 2)
+        cls.testNSmat = _mat(NSfile, grps = 2)
 
     @raises(AssertionError)
     def test_mat_bad_filename(self):
@@ -22,7 +24,13 @@ class TestClass:
         ok_(self.testmat.nu == 2.3, "Nu should be the correct value")
         ok_(type(self.testmat.sig_t) == np.ndarray, "Cross-section should be a numpy array")
         ok_(np.all(self.testmat.sig_t == [20.0, 30.0]), "Cross-sections should have correct values")
+        ok_(type(self.testmat.sig_a) == np.ndarray, "Cross-section should be a numpy array")
+        ok_(np.all(self.testmat.sig_a == [10.0, 40.0]), "Cross-sections should have correct values")
 
+    def test_mat_issource(self):
+        ok_(self.testmat.isSource, "Fission material be marked as a source")
+        ok_(not self.testNSmat.isSource, "Non source material should be marked as a non-source")
+        
     @raises(AssertionError)
     def test_mat_bad_structure(self):
         """ Specifying a group structure not in the material file should return
