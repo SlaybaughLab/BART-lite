@@ -1,6 +1,25 @@
 import numpy as np
+import warnings
 from math import pi
 import os, sys
+import xml.etree.ElementTree as ET
+
+class _mat():
+    def __init__(self, filename, grps):
+        """ Constructor of a single material, reads from a provided
+        filename and parses the required data from the xml file """
+        
+        assert os.path.exists(filename), "Material file: " + filename +\
+            " does not exist"
+        tree = ET.parse(filename)
+        root = tree.getroot()
+
+        # Read in nu value
+        nu = root.findall(".//prop/nu")
+        if len(nu) > 1:
+            warnings.warn("Multiple nu values, taking first found: " + nu[0].text)
+            
+        self.nu = float(nu[0].text)
 
 class material(object):
     def __init__(self):
@@ -35,12 +54,7 @@ class material(object):
         self.sigt_ua = dict()
         # diff_coef one group
         self.diff_coef_ua = dict()
-        # TODO: put whatever else necessary parameters if needed
-
-    def read(self, filename):
-        """Read material date stored in `filename`. """
-        assert os.path.exists(filename), "Material file: " + filename +\
-            " does not exist"
+        # TODO: put whatever else necessary parameters if needed        
 
     def read_xsec(self,xsec_filename):
         """@brief read cross sections from xml file
