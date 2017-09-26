@@ -25,12 +25,17 @@ class _mat():
         except IndexError:
             warnings.warn("No material properties found")
             
-        # Get cross-sections:
+        # Get group root:
+        g_root = root.findall(".//grp_struct/[@n='"+str(grps)+"']")
+        if not g_root:
+            raise KeyError("Group structure not found")
+
+        # Get cross-sections from group
         try:
-            for el in list(root.findall(".//grp_struct/[@n='"+str(grps)+"']")[0]):
+            for el in list(g_root[0].findall(".//xsec")[0]):
                 self.xsec.update({el.tag: np.array(map(float, el.text.split(',')))})
         except IndexError:
-            raise KeyError("Group structure not found")
+            warnings.warn("No xsec data found")
 
         if 'nu' in self.prop and 'sig_f' in self.xsec:
             self.isSource = True

@@ -11,8 +11,10 @@
       <!-- Group data -->
       <grp_structures>
 	<grp_struct n="2">
-	  <sig_t>20.0, 30.0</sig_t>
-	  <sig_a>10.0, 20.0</sig_a>
+	  <xsec>
+	    <sig_t>20.0, 30.0</sig_t>
+	    <sig_a>10.0, 20.0</sig_a>
+	  </xsec>
 	</grp_struct>
       </grp_structures>
 
