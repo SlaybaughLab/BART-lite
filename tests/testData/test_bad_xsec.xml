@@ -12,7 +12,7 @@
       <grp_structures>
 	<grp_struct n="2">
 	  <sig_t>20.0, 30.0</sig_t>
-	  <sig_a>10.0, 20.0</sig_a>
+	  <sig_a>10.0</sig_a>
 	</grp_struct>
       </grp_structures>
 

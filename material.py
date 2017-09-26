@@ -36,6 +36,23 @@ class _mat():
             self.isSource = True
         else:
             self.isSource = False
+
+        # Verify that all cross-sections have the same number of groups
+        # by checking that the dimensions are all identical
+        if not self.__check_equal__(map(np.shape, self.xsec.values())):
+            raise RuntimeError("At least one cross-section has the wrong dimension")
+
+    def __check_equal__(self, iterator):
+        """ Checks that all entries in iterator are identical
+        """
+        iterator = iter(iterator)
+            
+        try:
+            first = next(iterator)
+        except StopIteration:
+            return True
+            
+        return all(first == rest for rest in iterator)
         
 class material(object):
     def __init__(self):
