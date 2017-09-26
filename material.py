@@ -2,7 +2,7 @@ import numpy as np
 import warnings
 from math import pi
 import os, sys
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 class _mat():
     def __init__(self, filename, grps):
