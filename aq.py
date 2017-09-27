@@ -4,7 +4,7 @@ class for angular quadrature in 2D geometry
 import numpy as np
 from math import pi, cos, sin
 
-class aq(object):
+class AQ(object):
     def __init__(self, sn_ord):
         '''@brief Constructor of aq class
 
@@ -14,6 +14,8 @@ class aq(object):
         self.sn_ord = sn_ord
         # dictionary for containing angular quandrature directions and weights
         self.aq_data = dict()
+        # number of directions
+        self.n_dir = (sn_ord+2) * sn_ord / 2
         # make aq data
         self._quad2d()
 
@@ -39,6 +41,8 @@ class aq(object):
                 ox, oy = (1-mu**2.)**0.5 * cos(phi), (1-mu**2.)**0.5 * sin(phi)
                 self.aq_data[ct] = {'omega':np.array([ox, oy]), 'wt':w}
                 ct += 1
+        assert ct==self.n_dir "number of total directions are wrong"
+        self.aq_data['n_dir'] = ct
 
     def get_aq_data(self):
         '''@brief Interface function to get aq_data
