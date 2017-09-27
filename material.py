@@ -9,44 +9,102 @@ class _mat():
         """ Constructor of a single material, reads from a provided
         filename and parses the required data from the xml file """
 
-        self.n_grps = grps
-        self.xsec = {}
-        self.prop = {}
+        # Verify file exists
+        assert os.path.exists(filename), "Material file: " + filename\
+            + " does not exist"
         
-        # Get root
-        assert os.path.exists(filename), "Material file: " + filename +\
-            " does not exist"
+        self.n_grps = grps
+        self.gen    = {}     # General properties
+        self.prop   = {}     # Physical properties
+        self.gconst = {}     # Group non cross-section data
+        self.xsec   = {}     # Group cross-section data
+
+        self.__parse_XML__(filename, grps)
+        self.__validate__(filename)
+
+    def __parse_XML__(self, filename, grps):
+        # Parse the XML file
+        
+        # These are the tags that identify the different sections of
+        # the XML file. They are here to make it easy to change it in
+        # the future.
+        tag_prop           = "prop"            # Phys. Properties
+        tag_grp_structures = "grp_structures"  # Group structures
+        tag_xsec           = "xsec"            # Cross-sections
+        
+        # Get data and root
         root = ET.parse(filename).getroot()
 
-        # Get properties:
-        try:
-            for el in list(root.findall(".//prop")[0]):
-                self.prop.update({el.tag: float(el.text)})
-        except IndexError:
-            warnings.warn("No material properties found")
-            
-        # Get group root:
-        g_root = root.findall(".//grp_struct/[@n='"+str(grps)+"']")
-        if not g_root:
-            raise KeyError("Group structure not found")
+        # Parse top level tags, get roots for physical properties and
+        # group structures
+        for el in root.findall('./material/'):
+            if el.tag == tag_prop:
+                prop_root = el
+            elif el.tag == tag_grp_structures:
+                grp_structs = el
+            else:
+                self.__dict_add__(self.gen, el)
+        
+        # Parse physical properties
+        for el in prop_root:
+            self.__dict_add__(self.prop, el)
 
-        # Get cross-sections from group
+        # Find correct group structure, or throw error
         try:
-            for el in list(g_root[0].findall(".//xsec")[0]):
-                self.xsec.update({el.tag: np.array(map(float, el.text.split(',')))})
+            grp_root = grp_structs.findall(".*[@n='" +
+                                           str(self.n_grps) + "']")[0]
         except IndexError:
-            warnings.warn("No xsec data found")
+            raise KeyError(filename + ": group structure for n=" +
+                             str(self.n_grps) + " not found")
+
+        # Parse non cross-section constant data
+        for el in grp_root:
+            if el.tag == tag_xsec:
+                xsec_root = el
+            else:
+                self.__dict_add__(self.gconst, el)
+                
+        # Parse cross-sections
+        for el in xsec_root.findall('*'):
+            self.__dict_add__(self.xsec, el)
 
         if 'nu' in self.prop and 'sig_f' in self.xsec:
             self.isSource = True
         else:
             self.isSource = False
+        
+    def __validate__(self, filename):
+        # Perform validation checks on data
 
+        # Verify it has a material ID
+        try:
+            self.gen['id']
+        except KeyError:
+            raise RuntimeError(filename +
+                               ": has no valid material id")
+        
         # Verify that all cross-sections have the same number of groups
         # by checking that the dimensions are all identical
         if not self.__check_equal__(map(np.shape, self.xsec.values())):
-            raise RuntimeError("At least one cross-section has the wrong dimension")
+            raise RuntimeError(filename +
+                               """: Cross-sections must have the
+                               same dimensions""")
+            
+        
+    def __dict_add__(self, dict, el):
+        try:
+            # Try to convert to float
+            val = float(el.text)
+        except ValueError:
+            try:
+                # Try to convert if a comma separated list of floats
+                val = np.array(map(float, el.text.split(',')))
+            except ValueError:
+                # Just store the string
+                val = el.text
+        dict.update({el.tag: val})
 
+        
     def __check_equal__(self, iterator):
         """ Checks that all entries in iterator are identical
         """

@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
   <data>
     <material>
+      <!-- General Properties -->
       <name>Testing Material</name>
       <id>test_mat</id>
 
-      <!-- Material properties -->
+      <!-- Physical properties -->
       <prop>
 	<nu>2.3</nu>
       </prop>
 
       <!-- Group data -->
       <grp_structures>
+
 	<grp_struct n='2'>
-	  <chi>10.0, 20.0</chi>
+	  <chi>0.5, 1.0</chi>
+
 	  <xsec>
 	    <sig_t>20.0, 30.0</sig_t>
 	    <sig_a>10.0, 40.0</sig_a>
 	    <sig_f>50.0, 60.0</sig_f>
 	    <sig_s>40.0, 10.0</sig_s>
 	  </xsec>
+
 	</grp_struct>
+
       </grp_structures>
 
     </material>

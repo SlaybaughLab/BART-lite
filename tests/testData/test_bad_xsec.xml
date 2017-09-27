@@ -2,7 +2,7 @@
   <data>
     <material>
       <name>Testing Material</name>
-      <id>test_mat</id>
+      <id>test_mat_bad_xsec</id>
 
       <!-- Material properties -->
       <prop>
