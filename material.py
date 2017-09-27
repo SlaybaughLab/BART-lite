@@ -89,7 +89,11 @@ class _mat():
             raise RuntimeError(filename +
                                """: Cross-sections must have the
                                same dimensions""")
-            
+        # Verify that all cross-sections are positive
+        if not np.all(map(lambda x: x>0, self.xsec.values())):
+            raise RuntimeError(filename +
+                               ': contains negative cross-section.')
+
         
     def __dict_add__(self, dict, el):
         try:
@@ -103,7 +107,6 @@ class _mat():
                 # Just store the string
                 val = el.text
         dict.update({el.tag: val})
-
         
     def __check_equal__(self, iterator):
         """ Checks that all entries in iterator are identical

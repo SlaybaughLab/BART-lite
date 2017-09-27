@@ -3,12 +3,14 @@ from material import material
 from material import _mat
 import numpy as np
 
+testData_loc = './tests/testData/materials/'
+
 class TestFunctionality:
 
     @classmethod
     def setup_class(cls):
-        filename = './tests/testData/test_mat.xml'
-        NSfile = './tests/testData/test_mat_nonsource.xml'
+        filename = testData_loc + 'test_mat.xml'
+        NSfile = testData_loc + 'test_mat_nonsource.xml'
         cls.testmat = _mat(filename, grps = 2)
         cls.testNSmat = _mat(NSfile, grps = 2)
 
@@ -38,8 +40,8 @@ class TestErrors:
 
     @classmethod
     def setup_class(cls):
-        filename = './tests/testData/test_mat.xml'
-        NSfile = './tests/testData/test_mat_nonsource.xml'
+        filename = testData_loc + 'test_mat.xml'
+        NSfile = testData_loc + 'test_mat_nonsource.xml'
         cls.testmat = _mat(filename, grps = 2)
         cls.testNSmat = _mat(NSfile, grps = 2)
 
@@ -47,33 +49,39 @@ class TestErrors:
     def test_mat_bad_structure(self):
         """ Specifying a group structure not in the material file should return
         a Key error """
-        filename = './tests/testData/test_mat.xml'
+        filename = testData_loc + 'test_mat.xml'
         badMat = _mat(filename, grps = 3)
 
     @raises(AssertionError)
     def test_mat_bad_filename(self):
         """ Reading a bad filename should return an assertion error. """
-        filename = './tests/testData/badname.xml'
+        filename = testData_loc + 'badname.xml'
         badMat = _mat(filename, grps = 2)
 
     @raises(RuntimeError)
     def test_no_id(self):
         """ Uploading a material with no id should return a runtime error. """
-        filename = './tests/testData/test_no_id.xml'
+        filename = testData_loc + 'test_no_id.xml'
         badMat = _mat(filename, grps = 2)
         
     @raises(RuntimeError)
     def test_xsec_sizes(self):
         """ All cross section arrays should be the same size. """
-        filename = './tests/testData/test_bad_xsec.xml'
+        filename = testData_loc + 'test_bad_xsec.xml'
+        badMat = _mat(filename, grps = 2)
+
+    @raises(RuntimeError)
+    def test_xsec_pos(self):
+        """ Negative cross sections should return a Runtime Error """
+        filename = testData_loc + 'test_neg_xsec.xml'
         badMat = _mat(filename, grps = 2)
 
 class TestWarnings:
 
     @classmethod
     def setup_class(cls):
-        filename = './tests/testData/test_mat.xml'
-        NSfile = './tests/testData/test_mat_nonsource.xml'
+        filename = testData_loc + 'test_mat.xml'
+        NSfile = testData_loc + 'test_mat_nonsource.xml'
         cls.testmat = _mat(filename, grps = 2)
 
     
