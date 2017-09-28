@@ -8,6 +8,8 @@ class NDA(object):
     @param mat of type material.material. """
     
     self.mat = mat
+    self.num_materials = # extract number of materials 
+    self.num_groups = #
 
   def assemble_fixed_linear_forms(self):
     '''@brief a function used to assemble fixed source or fission source on the
@@ -18,32 +20,44 @@ class NDA(object):
     q = sps.lil_matrix((nodes, 1))
     j = sps.lil_matrix((nodes, 1))
 
-    # TODO: Retrieve cross-sections for cell
-    sigf = self.mat.sigf[g]
-    nu = self.mat.nu[g]
-        
-    # TODO: Calculate previous flux
-    flux_prev = 1 
-        
-        
-    # TODO: Calculate j
-    j = 1
+    elem_fs = [] # list of elementary matrices based on material
+    elem_qs = []
+    elem_js = []
 
-    # Assemble LHS
-    area = h**2
-    perimeter = 4*h
-    elem_f = np.zeros(4)
-    elem_q = np.zeros(4)
-    elem_j = np.zeros(4)
+    for m in num_materials:
+      # Set up elementary matrices for each material
 
-    for ii in xrange(4):
-      elem_f[ii] = nu*sigf*flux_prev*area
-      elem_q[ii] = q*area
-      elem_j[ii] = 2*j*perimeter
+      # TODO: Retrieve cross-sections for cell
+      sigf = self.mat.sigf[g, m] # material and group check with josh
+      nu = self.mat.nu[g, m]
+        
+      # TODO: Calculate previous flux
+      flux_prev = 1 
+        
+      # TODO: Calculate j
+      j = 1
+
+      # Assemble LHS
+      area = h**2 # retrieve h
+      perimeter = 4*h
+      elem_f = np.zeros(4)
+      elem_q = np.zeros(4)
+      elem_j = np.zeros(4)
+
+      for ii in xrange(4):
+        elem_f[ii] = nu*sigf*flux_prev*area
+        elem_q[ii] = q*area
+        elem_j[ii] = 2*j*perimeter
+
+      elem_fs.append(elem_f)
+      elem_qs.append(elem_q)
+      elem_js.append(elem_j)
 
     for cell in xrange(n):
       cell_i = cell//int(np.sqrt(n))
       cell_j = cell%int(np.sqrt(n))
+
+      m = # retrieve material id
 
       # Global to Local node mapping
       """Nodes are flattened by row with row x=0 going first.
@@ -55,13 +69,13 @@ class NDA(object):
       for ii in mapping:
         yy = 0
         for jj in mapping:
-          f[ii, 0] += elem_b[xx]
-          q[ii, 0] += elem_b[xx]
-          j[ii, 0] += elem_b[xx]
+          f[ii, 0] += elem_fs[m, xx]
+          q[ii, 0] += elem_qs[m, xx]
+          j[ii, 0] += elem_js[m, xx]
           yy += 1
         xx += 1
 
-    RHS = f + q + j
+      RHS = f + q + j
     return sps.csc_matrix(RHS)
 
   def assemble_bilinear_forms(self):
