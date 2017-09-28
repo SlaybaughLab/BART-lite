@@ -6,14 +6,22 @@ import numpy as np
 testData_loc = './tests/testData/materials/'
 
 class TestFunctionality:
-
+    # Tests to verify the material class functions are working
+    # properly
+    
     @classmethod
     def setup_class(cls):
         filename = testData_loc + 'test_mat.xml'
         NSfile = testData_loc + 'test_mat_nonsource.xml'
+        noXsecFile = testData_loc + 'test_mat_no_xsec.xml'
+        zeroXsecFile = testData_loc + 'test_mat_zero_xsec.xml'
         cls.testmat = _mat(filename, grps = 2)
         cls.testNSmat = _mat(NSfile, grps = 2)
+        cls.testNXmat = _mat(noXsecFile, grps = 2)
+        cls.testZXmat = _mat(zeroXsecFile, grps = 2)
 
+    # INITIALIZATION TESTS ===========================================
+        
     def test_mat_gen_prop(self):
         """ Reading a file should save the correct values to class vars. """
         ok_(type(self.testmat.prop["nu"]) == float, "Nu should be a float")
@@ -32,19 +40,48 @@ class TestFunctionality:
         ok_(np.all(self.testmat.gconst['chi'] == [0.5, 1.0]), "Group constant should have the correct value")
 
     def test_mat_issource(self):
+        """ Reading a file should generate the correct isSource value """
         ok_(self.testmat.isSource, "Fission material be marked as a source")
         ok_(not self.testNSmat.isSource, "Non source material should be marked as a non-source")
 
-       
-class TestErrors:
+    # DERIVED QUANTITIES =============================================
 
-    @classmethod
-    def setup_class(cls):
-        filename = testData_loc + 'test_mat.xml'
-        NSfile = testData_loc + 'test_mat_nonsource.xml'
-        cls.testmat = _mat(filename, grps = 2)
-        cls.testNSmat = _mat(NSfile, grps = 2)
+    
+    def test_mat_calc_inv_sigt(self):
+        """ Calculated inv_sigt should be correct or 0 if no sig_t or equals 0"""
+        ok_(np.allclose(self.testmat.derived['inv_sig_t'],
+                        np.array([0.05, 0.03333333])),
+            "Inverse Sig_t should calculate the correct value")
+        
+        ok_(np.allclose(self.testZXmat.derived['inv_sig_t'],
+                        np.array([0.0, 0.033333333])),
+            "Inverse Sig_t should return 0 if sig_t = 0")
 
+    def test_mat_calc_diff_coeff(self):
+        """ Calculated diff coef should be correct or 0 if no sig_t or equals 0"""
+        ok_(np.allclose(self.testmat.derived['diff_coef'],
+                        np.array([0.016666667, 0.011111111])),
+            "Diff Coef should calculate the correct val")
+        
+        ok_(np.allclose(self.testZXmat.derived['diff_coef'],
+                        np.array([0.0, 0.011111111])),
+            "Diffusion Coef should return 0 if sig_t = 0")
+
+
+    ## TEST ERRORS ===================================================
+
+    @raises(KeyError)
+    def test_mat_nxsec_no_inv(self):
+        """ A material with no cross-sections should not have an inverted
+        cross-section value """
+        self.testNXmat.derived['inv_sig_t']
+
+    @raises(KeyError)
+    def test_mat_nxsec_no_inv(self):
+        """ A material with no cross-section should not have an inv.
+        cross-section value """
+        self.testNXmat.derived['diff_coef']
+        
     @raises(KeyError)
     def test_mat_bad_structure(self):
         """ Specifying a group structure not in the material file should return
@@ -52,15 +89,19 @@ class TestErrors:
         filename = testData_loc + 'test_mat.xml'
         badMat = _mat(filename, grps = 3)
 
+    # ASSERTION ERRORS ===============================================
+    
     @raises(AssertionError)
     def test_mat_bad_filename(self):
         """ Reading a bad filename should return an assertion error. """
         filename = testData_loc + 'badname.xml'
         badMat = _mat(filename, grps = 2)
 
-    @raises(RuntimeError)
+    # RUNTIME ERRORS =================================================
+    
+    @raises(AssertionError)
     def test_no_id(self):
-        """ Uploading a material with no id should return a runtime error. """
+        """ Uploading a material with no id should return an assertion error. """
         filename = testData_loc + 'test_no_id.xml'
         badMat = _mat(filename, grps = 2)
         
@@ -75,13 +116,3 @@ class TestErrors:
         """ Negative cross sections should return a Runtime Error """
         filename = testData_loc + 'test_neg_xsec.xml'
         badMat = _mat(filename, grps = 2)
-
-class TestWarnings:
-
-    @classmethod
-    def setup_class(cls):
-        filename = testData_loc + 'test_mat.xml'
-        NSfile = testData_loc + 'test_mat_nonsource.xml'
-        cls.testmat = _mat(filename, grps = 2)
-
-    

@@ -13,15 +13,38 @@ class _mat():
         assert os.path.exists(filename), "Material file: " + filename\
             + " does not exist"
         
-        self.n_grps = grps
-        self.gen    = {}     # General properties
-        self.prop   = {}     # Physical properties
-        self.gconst = {}     # Group non cross-section data
-        self.xsec   = {}     # Group cross-section data
+        self.n_grps  = grps
+        self.gen     = {}     # General properties
+        self.prop    = {}     # Physical properties
+        self.gconst  = {}     # Group non cross-section data
+        self.xsec    = {}     # Group cross-section data
+        self.derived = {}     # Derived quantities
 
-        self.__parse_XML__(filename, grps)
-        self.__validate__(filename)
+        self.__parse_XML__(filename, grps)  # Parse input XML file
+        self.__validate__(filename)         # Validate material data
+        self.__derive__()                   # Calculate derived props
 
+    # INITIALIZATION FUNCTIONS ========================================
+
+    def __derive__(self):
+        # Calculate derived quantities
+
+        if 'sig_t' in self.xsec:
+            # Find non-zero entries of Sig_t
+            non_zero = self.xsec['sig_t']!=0
+            # Inverse Sig_t
+            inv_sig_t = np.power(self.xsec['sig_t'], -1,
+                                 where=non_zero)
+            # Diffusion Coeff
+            diff_coef = np.power(3. * self.xsec['sig_t'], -1,
+                                 where=non_zero)
+
+            self.derived.update({'diff_coef': diff_coef})
+            self.derived.update({'inv_sig_t': inv_sig_t})            
+        
+        
+            
+    
     def __parse_XML__(self, filename, grps):
         # Parse the XML file
         
@@ -77,11 +100,8 @@ class _mat():
         # Perform validation checks on data
 
         # Verify it has a material ID
-        try:
-            self.gen['id']
-        except KeyError:
-            raise RuntimeError(filename +
-                               ": has no valid material id")
+        assert 'id' in  self.gen,\
+            filename + ": has no valid material id"
         
         # Verify that all cross-sections have the same number of groups
         # by checking that the dimensions are all identical
@@ -90,10 +110,11 @@ class _mat():
                                """: Cross-sections must have the
                                same dimensions""")
         # Verify that all cross-sections are positive
-        if not np.all(map(lambda x: x>0, self.xsec.values())):
+        if not np.all(map(lambda x: x>=0, self.xsec.values())):
             raise RuntimeError(filename +
                                ': contains negative cross-section.')
 
+    ## UTILITY FUNCTIONS =============================================
         
     def __dict_add__(self, dict, el):
         try:
