@@ -14,7 +14,7 @@
       <grp_structures>
 
 	<grp_struct n='2'>
-	  <chi>0.5, 1.0</chi>
+	  <chi>0.25, 0.75</chi>
 
 	  <xsec>
 	    <sig_t>20.0, 30.0</sig_t>

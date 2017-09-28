@@ -37,7 +37,7 @@ class TestFunctionality:
     def test_mat_gconst(self):
         """ Reading a file should save the correct gconst values """
         ok_(type(self.testmat.gconst['chi']) == np.ndarray, "Group constant should be a numpy array")
-        ok_(np.all(self.testmat.gconst['chi'] == [0.5, 1.0]), "Group constant should have the correct value")
+        ok_(np.all(self.testmat.gconst['chi'] == [0.25, 0.75]), "Group constant should have the correct value")
 
     def test_mat_issource(self):
         """ Reading a file should generate the correct isSource value """
@@ -67,9 +67,19 @@ class TestFunctionality:
                         np.array([0.0, 0.011111111])),
             "Diffusion Coef should return 0 if sig_t = 0")
 
+    def test_mat_calc_nu_sigf(self):
+        """ Calculated nu_sigf should be correct value """
+        ok_(np.allclose(self.testmat.derived['chi_nu_sig_f'],
+                        np.array([28.75, 103.5])),
+            "Chi_nu_sig_f should be the correct value")
+
+    def test_mat_no_xsec_no_chi_nu_sig_f(self):
+        """ A material with no cross-section should not have a sig f nu
+        value """
+        ok_('chi_nu_sig_f' not in self.testNXmat.derived)
 
     ## TEST ERRORS ===================================================
-
+    
     @raises(KeyError)
     def test_mat_nxsec_no_inv(self):
         """ A material with no cross-sections should not have an inverted

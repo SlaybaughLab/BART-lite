@@ -7,7 +7,18 @@ import xml.etree.cElementTree as ET
 class _mat():
     def __init__(self, filename, grps):
         """ Constructor of a single material, reads from a provided
-        filename and parses the required data from the xml file """
+        filename and parses the required data from the xml file
+
+        Material properties are as follows:
+        self.gen:     any tags in <material>, i.e. name, id
+        self.prop:    any tags in material/prop, i.e. nu
+        self.gconst:  any non-xsec tags in grp_struct, i.e. chi
+        self.xsec:    any tags in xsec, i.e. sig_t, sig_a, sig_f
+        self.derived: derived quantities:
+          - inv_sig_t: inverse of <sig_t> if present
+          - diff_coef: diffusion coef, if <sig_t> present
+          - chi_nu_sig_f: chi*nu*sig_f if <nu> and <sig_f> present
+        """
 
         # Verify file exists
         assert os.path.exists(filename), "Material file: " + filename\
@@ -22,26 +33,37 @@ class _mat():
 
         self.__parse_XML__(filename, grps)  # Parse input XML file
         self.__validate__(filename)         # Validate material data
-        self.__derive__()                   # Calculate derived props
+        
+        if 'sig_t' in self.xsec:
+            self.__derive_sig_t__()         # Calc sig_t derv. prop
+
+        if self.isSource:
+            self.__derive_fiss__()          # Calc fission derv. prop
 
     # INITIALIZATION FUNCTIONS ========================================
 
-    def __derive__(self):
-        # Calculate derived quantities
+    def __derive_sig_t__(self):
+        # Calculate derived quantities based on sig_t
 
-        if 'sig_t' in self.xsec:
-            # Find non-zero entries of Sig_t
-            non_zero = self.xsec['sig_t']!=0
-            # Inverse Sig_t
-            inv_sig_t = np.power(self.xsec['sig_t'], -1,
+        # Find non-zero entries of Sig_t
+        non_zero = self.xsec['sig_t']!=0
+        # Inverse Sig_t
+        inv_sig_t = np.power(self.xsec['sig_t'], -1,
                                  where=non_zero)
-            # Diffusion Coeff
-            diff_coef = np.power(3. * self.xsec['sig_t'], -1,
+        # Diffusion Coeff
+        diff_coef = np.power(3. * self.xsec['sig_t'], -1,
                                  where=non_zero)
 
-            self.derived.update({'diff_coef': diff_coef})
-            self.derived.update({'inv_sig_t': inv_sig_t})            
+        self.derived.update({'diff_coef': diff_coef})
+        self.derived.update({'inv_sig_t': inv_sig_t})            
         
+    def __derive_fiss__(self):
+        # Calculate derived quantities based on fission properties
+        
+        chi_nu_sig_f = np.multiply(self.gconst['chi'],
+                                   self.prop['nu']*self.xsec['sig_f'])
+        self.derived.update({'chi_nu_sig_f': chi_nu_sig_f})
+
         
             
     
