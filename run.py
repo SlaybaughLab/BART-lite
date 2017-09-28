@@ -14,7 +14,7 @@ CELL_LENGTH = DOMAIN_LENGTH/CELLS
 
 DATA = build_cells.cell_to_metadata
 
-def run():
+def main():
   u = fempoi2d.fempoi2d(CELL_LENGTH, DOMAIN_LENGTH, DATA)
   x = mesh_gen(CELLS)[:, :, 0]
   y = mesh_gen(CELLS)[:, :, 1]
@@ -24,6 +24,7 @@ def run():
   plt.axis('equal')
   plt.show()
 
-run()
+if __name__ == '__main__':
+  main()
 
 
