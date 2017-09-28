@@ -62,10 +62,7 @@ class _mat():
         
         chi_nu_sig_f = np.multiply(self.gconst['chi'],
                                    self.prop['nu']*self.xsec['sig_f'])
-        self.derived.update({'chi_nu_sig_f': chi_nu_sig_f})
-
-        
-            
+        self.derived.update({'chi_nu_sig_f': chi_nu_sig_f})      
     
     def __parse_XML__(self, filename, grps):
         # Parse the XML file
@@ -162,13 +159,39 @@ class _mat():
             return True
             
         return all(first == rest for rest in iterator)
-        
+
+class mat_lib():
+    def __init__(self, n_grps, files=[]):
+        '''Material Library class, holds multiple _mat objects provided
+        at initialization or added later.
+
+        files: list of filenames to material xml files
+        '''
+        self.mats = []       # Holds all materials
+        self.n_grps = n_grps # Energy groups
+
+        for f in files:
+            self.add(f)
+
+    def add(self, filename):
+        """ Adds the material stored in filename to the library, if it
+        is not already in there. """
+
+        new_mat = _mat(filename, grps = self.n_grps)
+
+        if new_mat.gen['id'] not in self.ids():
+            self.mats.append(new_mat)
+        else:
+            raise(RuntimeError, "Cannot add file " + filename +
+                  ", mat_id already exists in material library")
+
+    def ids(self):
+        """ Returns the id's of stored materials """
+        return [mat.gen['id'] for mat in self.mats]
+    
 class material(object):
     def __init__(self):
-        '''@brief constructor of material class
-
-        @param self The reference to current instance of the material class
-        '''
+        
         self.n_materials = 1#change it
         self.n_group = 1#change it
         self.g_thermal = 0#from which we can see upscattering effect
