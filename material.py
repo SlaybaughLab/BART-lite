@@ -273,13 +273,14 @@ class mat_lib():
 
 class mat_map():
     def __init__(self, lib, layout, mat_dict, x_max, n, x_min=0,
-                 y_min=0, y_max=''):
+                 y_min=0, y_max=None):
         """ mat map will create a material map based on a string input
         map and problem parameters """
         x = [x_min, x_max]
         y = [y_min, y_max] if y_max else [y_min, x_max]
-        self.n = int(n)
+        
         self.mat_dict = mat_dict
+        self.mat_lib = lib
 
         try:
             self.x = map(float, x)
@@ -287,6 +288,10 @@ class mat_map():
         except ValueError:
             raise ValueError("x and y domain limits must be numbers")
 
+        self.dx = x[1]/float(n)
+        self.dy = y[1]/float(n)
+        self.n = int(n)
+        
         #Generate layout
         # Split into words
         split_layout = re.sub("[^\w]", " ",  layout).split()
@@ -303,7 +308,18 @@ class mat_map():
                        range(0, len(split_layout), n_dim)]
 
         self.array = self.__build_array__()
-               
+
+    def get(self, prop, loc):
+        # Get property from material at given location, loc is either
+        # the index of the location k or a tuple of x and y
+        if isinstance(loc, tuple):
+            k = int(loc[0]/self.dx) + int(loc[1]/self.dy)*self.n
+        else:
+            k = loc
+
+        return self.mat_lib.get(prop=prop, mat_id=self.array[k])
+            
+        
     def __build_array__(self):
         # Builds the array
         try:
