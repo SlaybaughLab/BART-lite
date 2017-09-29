@@ -1,5 +1,6 @@
 import numpy as np
 import warnings
+import re
 from math import pi
 import os, sys
 import xml.etree.cElementTree as ET
@@ -270,6 +271,53 @@ class mat_lib():
             
         return data        
 
+class mat_map():
+    def __init__(self, lib, layout, mat_dict, x_max, n, x_min=0,
+                 y_min=0, y_max=''):
+        """ mat map will create a material map based on a string input
+        map and problem parameters """
+        x = [x_min, x_max]
+        y = [y_min, y_max] if y_max else [y_min, x_max]
+        self.n = int(n)
+        self.mat_dict = mat_dict
+
+        try:
+            self.x = map(float, x)
+            self.y = map(float, y)
+        except ValueError:
+            raise ValueError("x and y domain limits must be numbers")
+
+        #Generate layout
+        # Split into words
+        split_layout = re.sub("[^\w]", " ",  layout).split()
+
+        # Verify a square number have been given
+        n_dim = np.sqrt(len(split_layout))
+        
+        assert n_dim.is_integer(),\
+            "Layout must have a square number of entries"
+        
+        n_dim = int(n_dim)
+        
+        self.layout = [split_layout[i:i + n_dim] for i in
+                       range(0, len(split_layout), n_dim)]
+
+        self.array = self.__build_array__()
+               
+    def __build_array__(self):
+        # Builds the array
+        try:
+            array = []
+            for row in reversed(self.layout):
+                to_add = []
+                for col in row:
+                    to_add += int(1.0/len(row)*self.n)*[self.mat_dict[col]]
+                to_add = int(1.0/len(row)*self.n)*to_add
+                array += to_add
+            return array
+        except KeyError:
+            raise KeyError("Bad material id in mat_dictionary")
+            
     
 class material(object):
     def __init__(self):
