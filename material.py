@@ -222,6 +222,9 @@ class mat_lib():
         else:
             return data
 
+    def get_per_str(self, *args, **kwargs):
+        return np.divide(self.get(*args, **kwargs), 4.0*np.pi)
+
     def __mat_data__(self, prop):
         data = {}
         
