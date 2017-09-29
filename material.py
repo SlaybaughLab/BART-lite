@@ -30,6 +30,9 @@ class _mat():
         self.gconst  = {}     # Group non cross-section data
         self.xsec    = {}     # Group cross-section data
         self.derived = {}     # Derived quantities
+        
+        self.all_dict= [self.gen, self.prop, self.gconst,
+                        self.xsec, self.derived]
 
         self.__parse_XML__(filename, grps)  # Parse input XML file
         self.__validate__(filename)         # Validate material data
@@ -124,14 +127,25 @@ class _mat():
         
         # Verify that all cross-sections have the same number of groups
         # by checking that the dimensions are all identical
-        if not self.__check_equal__(map(np.shape, self.xsec.values())):
-            raise RuntimeError(filename +
+        
+        for a in self.xsec.values():
+            if np.shape(a) != (self.n_grps,) and\
+               np.shape(a) != (self.n_grps, self.n_grps):
+                raise RuntimeError(filename +
                                """: Cross-sections must have the
                                same dimensions""")
+        
         # Verify that all cross-sections are positive
-        if not np.all(map(lambda x: x>=0, self.xsec.values())):
+        if not all([np.all(m) for m in map(lambda x: x>=0,
+                                           self.xsec.values())]):
             raise RuntimeError(filename +
                                ': contains negative cross-section.')
+
+        # Verify that g_thermal is not higher than the number of groups
+        if 'g_thermal' in self.gconst:
+            if self.gconst['g_thermal'] + 1 > self.n_grps:
+                raise RuntimeError(filename +
+                                   ': g_thermal > n_groups')
 
     ## UTILITY FUNCTIONS =============================================
         
@@ -144,8 +158,13 @@ class _mat():
                 # Try to convert if a comma separated list of floats
                 val = np.array(map(float, el.text.split(',')))
             except ValueError:
+                try:
+                    # Try to convert to a matrix
+                    val = np.array([map(float, s.split(',')) for s in
+                                    el.text.split(';')])
                 # Just store the string
-                val = el.text
+                except ValueError:
+                    val = el.text
         dict.update({el.tag: val})
         
     def __check_equal__(self, iterator):
@@ -188,29 +207,44 @@ class mat_lib():
     def ids(self):
         """ Returns the id's of stored materials """
         return [mat.gen['id'] for mat in self.mats]
+
+    def get(self, prop, mat_id=''):
+        """ Returns a dictionary with material ids as keys and the
+        specified property as values"""
+
+        data = self.__mat_data__(prop)
+
+        if mat_id:
+            try:
+                return data[mat_id]
+            except KeyError:
+                raise(KeyError, "Bad material id")
+        else:
+            return data
+
+    def __mat_data__(self, prop):
+        data = {}
+        
+        for mat in self.mats:
+            for mdict in mat.all_dict:
+                if prop in mdict:
+                    data.update({mat.gen['id']: mdict[prop]})
+                    break
+
+        return data        
+
     
 class material(object):
     def __init__(self):
         
-        self.n_materials = 1#change it
-        self.n_group = 1#change it
         self.g_thermal = 0#from which we can see upscattering effect
         # The material properties are stored as dictionaries. The keys are material
         # IDs. Dictionary values are numpy arrays of properties for sigt, nu, sigf
         # and
         # The following is the basic material properties
-        self.sigt = dict()
-        self.nu = dict()
-        self.sigf = dict()
-        self.sigs = dict()
-        self.chi = dict()
-
         # The following is the derived properties based on basic properties
         self.sigs_per_str = dict()
-        self.chi_nu_sigf = dict()
         self.chi_nu_sigf_per_str = dict()
-        self.diff_coef = dict()
-        self.inv_sigt = dict()
 
         # The following is for upscattering acceleration
         # spectrum
@@ -221,35 +255,15 @@ class material(object):
         self.diff_coef_ua = dict()
         # TODO: put whatever else necessary parameters if needed        
 
-    def read_xsec(self,xsec_filename):
-        """@brief read cross sections from xml file
-
-        @param xsec_filename The xml filename
-        """
-        # TODO: fill in material properties reading. Please read in the following:
-        # self.sigt; self.nu; self.sigf; self.sigs
-        # data structures are dictionaries of numpy arraies
-
-    def read_material_id(self,id_filename):
-        """@brief read mateiral id
-
-        @param id_filename The xml filename
-        """
-        # TODO: fill in ID reading
 
     def derived_properties(self):
         '''@brief derive properties after reading in  basic properties
         '''
         # inv_sigt and diff_coef:
-        for k, v in self.sigt.items():
-            self.inv_sigt[k] = 1. / self.sigt[k]
-            self.diff_coef[k] = 1./ (3. * self.sigt[k])
-        # sigs_per_str:
         for k, v in self.sigs.items():
             self.sigs_per_str[k] = v / (4.0 * pi)
         # nu_sigf and nu_sigf_per_str:
         for k in range(self.n_materials):
-            self.chi_nu_sigf[k] = np.outer(self.chi[k], self.nu[k]*self.sigf[k])
             self.chi_nu_sigf_per_str[k] = self.chi_nu_sigf[k] / (4.0 * pi)
 
     def derive_scattering_eigenvalue(self):

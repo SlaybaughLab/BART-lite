@@ -44,6 +44,10 @@ class TestFunctionality:
         ok_(self.testmat.isSource, "Fission material be marked as a source")
         ok_(not self.testNSmat.isSource, "Non source material should be marked as a non-source")
 
+    def test_scattering_matrix(self):
+        ok_(np.array_equal(self.testmat.xsec['sig_s'],
+                           np.array([[40,10],[20,30]])))
+        
     # DERIVED QUANTITIES =============================================
 
     
@@ -79,6 +83,13 @@ class TestFunctionality:
         ok_('chi_nu_sig_f' not in self.testNXmat.derived)
 
     ## TEST ERRORS ===================================================
+
+    @raises(RuntimeError)
+    def test_mat_bad_g_thermal(self):
+        """ A value of g_thermal greater than n_grps should return
+        a runtime error """
+        filename = testData_loc + 'test_bad_g_thermal.xml'
+        badmat = _mat(filename, grps = 2)
     
     @raises(KeyError)
     def test_mat_nxsec_no_inv(self):

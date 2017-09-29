@@ -35,3 +35,20 @@ class TestFunctionality:
         """ Ids function should return correct values """
         ok_(all([id in self.lib.ids()
                  for id in ['test_mat', 'test_mat2']]))
+
+    def test_get(self):
+        """ get should return a dictionary with all materials """
+        ok_(np.array_equal(self.lib.get('sig_t')['test_mat'],
+                   np.array([20.0, 30.0])))
+        ok_(np.array_equal(self.lib.get('sig_t')['test_mat2'],
+                   np.array([10.0, 20.0])))
+
+    def test_get_id(self):
+        """ providing an id and a prop returns the array for that mat """
+        ok_(np.array_equal(self.lib.get('sig_t', mat_id='test_mat'),
+                           np.array([20.0, 30.0])))
+
+    @raises(KeyError)
+    def test_get_bad_id(self):
+        """ Requesting with a bad id should return a key error """
+        self.lib.get('sig_t', mat_id='bad_id')
