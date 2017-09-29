@@ -30,7 +30,8 @@ class _mat():
         self.gconst  = {}     # Group non cross-section data
         self.xsec    = {}     # Group cross-section data
         self.derived = {}     # Derived quantities
-        
+
+        # All dictionaries that hold material parameters
         self.all_dict= [self.gen, self.prop, self.gconst,
                         self.xsec, self.derived]
 
@@ -41,13 +42,31 @@ class _mat():
             self.__derive_sig_t__()         # Calc sig_t derv. prop
 
         if 'sig_s' in self.xsec and 'g_thermal' in self.gconst:
-            self.__derive_thermal__()
+            self.__derive_thermal__()       # Calc thermal eigenvalues
 
         if self.isSource:
             self.__derive_fiss__()          # Calc fission derv. prop
 
+        if 'sig_t' in self.xsec and 'ksi_ua' in self.derived and\
+           'g_thermal' in self.gconst:
+            self.__derive_acceleration__()  # Calc acceleration
+
     # INITIALIZATION FUNCTIONS ========================================
 
+    def __derive_acceleration__(self):
+        # Calculate acceleration properties
+        i = int(self.gconst['g_thermal'])
+
+        sig_t_ua = np.dot(self.derived['ksi_ua'],
+                          self.xsec['sig_t'][i:])
+        
+        diff_coef_ua = np.dot(self.derived['ksi_ua'],
+                              self.derived['diff_coef'][i:])
+        
+        self.derived.update({'sig_t_ua': sig_t_ua})
+        self.derived.update({'diff_coef_ua': diff_coef_ua})
+        
+    
     def __derive_sig_t__(self):
         # Calculate derived quantities based on sig_t
 
@@ -228,7 +247,7 @@ class mat_lib():
     def get_per_str(self, *args, **kwargs):
         
         return np.divide(self.get(*args, **kwargs), 4.0*np.pi)
-
+    
     def __mat_data__(self, prop):
         data = {}
         
@@ -243,38 +262,8 @@ class mat_lib():
     
 class material(object):
     def __init__(self):
-        
-        self.g_thermal = 0#from which we can see upscattering effect
-        # The material properties are stored as dictionaries. The keys are material
-        # IDs. Dictionary values are numpy arrays of properties for sigt, nu, sigf
-        # and
-        # The following is the basic material properties
-        # The following is the derived properties based on basic properties
-        self.sigs_per_str = dict()
-        self.chi_nu_sigf_per_str = dict()
-
-        # The following is for upscattering acceleration
-        # spectrum
-        self.ksi_ua = dict()
-        # sigt one group
-        self.sigt_ua = dict()
-        # diff_coef one group
-        self.diff_coef_ua = dict()
-        # TODO: put whatever else necessary parameters if needed        
-
-    def derive_scattering_eigenvalue(self):
-        for k, v in self.sigs.items():
-            # slicing to get thermal group transfer matrices
-            thermal_scat = v[self.g_thermal:, self.g_thermal:]
-            self.ksi_ua[k] = np.linalg.eigvals(thermal_scat)
-
-    def produce_acceleration_properties(self):
-        for k in xrange(n_materials):
-            self.sigt_ua[k] = 0.0
-            self.diff_coef_ua[k] = 0.0
-            self.sigt_ua[k] = np.dot(self.ksi_ua[k], self.sigt[k][self.g_thermal:])
-            self.diff_coef_ua[k] = np.dot(self.ksi_ua[k], self.diff_coef[k][self.g_thermal:])
-
+        pass
+    
     def estimate_cell_correction_ua(self, cell_corrections_at_qp, material_id):
         '''@brief function used to estimate one-group vector_D at quadrature points
 

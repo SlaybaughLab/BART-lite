@@ -15,10 +15,12 @@ class TestFunctionality:
         NSfile = testData_loc + 'test_mat_nonsource.xml'
         noXsecFile = testData_loc + 'test_mat_no_xsec.xml'
         zeroXsecFile = testData_loc + 'test_mat_zero_xsec.xml'
+        threeGFile = testData_loc + 'test_mat_3grps.xml'
         cls.testmat = _mat(filename, grps = 2)
         cls.testNSmat = _mat(NSfile, grps = 2)
         cls.testNXmat = _mat(noXsecFile, grps = 2)
         cls.testZXmat = _mat(zeroXsecFile, grps = 2)
+        cls.test3gmat = _mat(threeGFile, grps = 3)
 
     # INITIALIZATION TESTS ===========================================
         
@@ -86,6 +88,23 @@ class TestFunctionality:
         """ Calculated thermal eigenvalue should be correct """
         ok_(np.array_equal(self.testmat.derived['ksi_ua'],
                            np.array([50.0, 20.0])))
+        ok_(np.array_equal(self.test3gmat.derived['ksi_ua'],
+                           np.array([50.0, 20.0])))
+
+
+    def test_aceleration_properties(self):
+        """ Calculated aceleration properties should be correct """
+        ok_(self.testmat.derived['sig_t_ua'] == 1600,
+            "Sig_t_ua test_mat, incorrect value")
+        ok_(self.test3gmat.derived['sig_t_ua'] == 1600,
+            "Sig_t_ua test3gmat, incorrect value")
+        ok_(np.allclose(self.testmat.derived['diff_coef_ua'],
+                        1.05555555556),
+            "Diff_coef_ua, test_mat, incorrect value")
+        ok_(np.allclose(self.test3gmat.derived['diff_coef_ua'],
+                                1.05555555556),
+            "Diff_coef_ua, test_mat, incorrect value")
+        
 
     ## TEST ERRORS ===================================================
 
