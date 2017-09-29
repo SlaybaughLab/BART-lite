@@ -180,18 +180,7 @@ class _mat():
                 except ValueError:
                     val = el.text
         dict.update({el.tag: val})
-        
-    def __check_equal__(self, iterator):
-        """ Checks that all entries in iterator are identical
-        """
-        iterator = iter(iterator)
-            
-        try:
-            first = next(iterator)
-        except StopIteration:
-            return True
-            
-        return all(first == rest for rest in iterator)
+    
 
 class mat_lib():
     def __init__(self, n_grps, files=[]):
