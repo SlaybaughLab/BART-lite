@@ -237,7 +237,7 @@ class mat_lib():
         if new_mat.gen['id'] not in self.ids():
             self.mats.append(new_mat)
         else:
-            raise(RuntimeError, "Cannot add file " + filename +
+            raise RuntimeError("Cannot add file " + filename +
                   ", mat_id already exists in material library")
 
     def ids(self):
@@ -254,7 +254,7 @@ class mat_lib():
             try:
                 return data[mat_id]
             except KeyError:
-                raise(KeyError, "Bad material id")
+                raise KeyError("Bad material id")
         else:
             return data
 
