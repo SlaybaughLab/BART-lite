@@ -40,6 +40,9 @@ class _mat():
         if 'sig_t' in self.xsec:
             self.__derive_sig_t__()         # Calc sig_t derv. prop
 
+        if 'sig_s' in self.xsec and 'g_thermal' in self.gconst:
+            self.__derive_thermal__()
+
         if self.isSource:
             self.__derive_fiss__()          # Calc fission derv. prop
 
@@ -65,7 +68,15 @@ class _mat():
         
         chi_nu_sig_f = np.multiply(self.gconst['chi'],
                                    self.prop['nu']*self.xsec['sig_f'])
-        self.derived.update({'chi_nu_sig_f': chi_nu_sig_f})      
+        self.derived.update({'chi_nu_sig_f': chi_nu_sig_f})
+
+    def __derive_thermal__(self):
+        # Calculate quantities based on thermal scattering
+        i = int(self.gconst['g_thermal'])
+        
+        # Slice scattering matrix based on g_thermal
+        thermal = self.xsec['sig_s'][i:, i:]
+        self.derived.update({'ksi_ua': np.linalg.eigvals(thermal)})
     
     def __parse_XML__(self, filename, grps):
         # Parse the XML file
@@ -146,6 +157,9 @@ class _mat():
             if self.gconst['g_thermal'] + 1 > self.n_grps:
                 raise RuntimeError(filename +
                                    ': g_thermal > n_groups')
+            if not self.gconst['g_thermal'].is_integer():
+                raise RuntimeError(filename +
+                                   ': g_thermal must be an integer')
 
     ## UTILITY FUNCTIONS =============================================
         
@@ -223,6 +237,7 @@ class mat_lib():
             return data
 
     def get_per_str(self, *args, **kwargs):
+        
         return np.divide(self.get(*args, **kwargs), 4.0*np.pi)
 
     def __mat_data__(self, prop):
@@ -257,17 +272,6 @@ class material(object):
         # diff_coef one group
         self.diff_coef_ua = dict()
         # TODO: put whatever else necessary parameters if needed        
-
-
-    def derived_properties(self):
-        '''@brief derive properties after reading in  basic properties
-        '''
-        # inv_sigt and diff_coef:
-        for k, v in self.sigs.items():
-            self.sigs_per_str[k] = v / (4.0 * pi)
-        # nu_sigf and nu_sigf_per_str:
-        for k in range(self.n_materials):
-            self.chi_nu_sigf_per_str[k] = self.chi_nu_sigf[k] / (4.0 * pi)
 
     def derive_scattering_eigenvalue(self):
         for k, v in self.sigs.items():

@@ -14,7 +14,7 @@
       <grp_structures>
 
 	<grp_struct n='2'>
-	  <g_thermal>0</g_thermal>
+	  <g_thermal>0.6</g_thermal>
 	  <chi>0.25, 0.75</chi>
 
 	  <xsec>

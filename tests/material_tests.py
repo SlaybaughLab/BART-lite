@@ -82,8 +82,20 @@ class TestFunctionality:
         value """
         ok_('chi_nu_sig_f' not in self.testNXmat.derived)
 
+    def test_mat_calc_ksi_ua(self):
+        """ Calculated thermal eigenvalue should be correct """
+        ok_(np.array_equal(self.testmat.derived['ksi_ua'],
+                           np.array([50.0, 20.0])))
+
     ## TEST ERRORS ===================================================
 
+    @raises(RuntimeError)
+    def test_mat_nonint_g_thermal(self):
+        """ A non integer value of g_thermal should return a runtime
+        error"""
+        filename = testData_loc + 'test_bad_g_thermal_float.xml'
+        badmat = _mat(filename, grps = 2)
+    
     @raises(RuntimeError)
     def test_mat_bad_g_thermal(self):
         """ A value of g_thermal greater than n_grps should return
