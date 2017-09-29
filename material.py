@@ -51,6 +51,20 @@ class _mat():
            'g_thermal' in self.gconst:
             self.__derive_acceleration__()  # Calc acceleration
 
+    # PUBLIC FUNCTIONS
+
+    def get_props(self):
+        # Returns an array of all the properties that the material has
+        return [d.keys() for d in self.all_dict]
+
+    def get(self, prop):
+        # Returns the value of a given property prop
+        try:
+            return next(d[prop] for d in self.all_dict if prop in d)
+        except StopIteration:
+            raise RuntimeError("Invalid material property for "
+                               + self.gen['id'] + ": "+ prop)
+            
     # INITIALIZATION FUNCTIONS ========================================
 
     def __derive_acceleration__(self):
@@ -250,13 +264,10 @@ class mat_lib():
     
     def __mat_data__(self, prop):
         data = {}
-        
-        for mat in self.mats:
-            for mdict in mat.all_dict:
-                if prop in mdict:
-                    data.update({mat.gen['id']: mdict[prop]})
-                    break
 
+        for mat in self.mats:
+            data.update({mat.get('id') : mat.get(prop)})
+            
         return data        
 
     
