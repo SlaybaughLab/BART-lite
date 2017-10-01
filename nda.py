@@ -82,7 +82,6 @@ class NDA(object):
             fixed_rhs = f + q + j
             fixed_rhs = sps.csc_matrix(fixed_rhs)
             fixed_rhses[g] = fixed_rhs
-        return(fixed_rhses)
 
     def assemble_group_bilinear_forms(self,g):
         '''@brief Function used to assemble bilinear forms
@@ -175,20 +174,18 @@ class NDA(object):
         # Scattering + fixed source 
 
     def assemble_bilinear_forms(self):
-        lhses = [0] * self.n_grp
         for g in xrange(self.n_grp):
-            lhses[g] = self.assemble_group_bilinear_forms(g)
-        return lhses
+            sys_mats[g] = self.assemble_group_bilinear_forms(g)
 
   def solve_in_group(self):
     '''@brief Called to solve direction by direction inside Group g
     @param g Group index
     '''
-    linear_forms = self.assemble_linear_forms()
-    bilinear_form = self.assemble_bilinear_forms()
-
-    for g in xrange(self.n_group):
-      sps.linalg.spsolve(bilinear_form, linear_forms[g])
+    assert 0<=g<=self.n_grp, 'Group index out of range'
+    # if not factorized, factorize the the HO matrices
+    if lu[g]==0:
+        lu[g] = sla.splu(self.sys_mats[g])
+    self.aflxes[g] = lu[g].solve(self.sys_rhses[g])
 
 
 
