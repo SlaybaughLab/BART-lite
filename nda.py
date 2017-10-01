@@ -7,15 +7,19 @@ class NDA(object):
 
     @param mat of type material.material. """
     
-    self.mat = mat
+    self.mat = mat # materials library
     self.num_materials = # extract number of materials 
-    self.num_groups = #
+    self.n_grp = #
+    # matrices and vectors
+    self.sys_mats = [0 for _ in xrange(self.n_grp)]
+    self.sys_rhses = 
 
-  def assemble_fixed_linear_forms(self):
+  def assemble_fixed_linear_forms(self, sflxes_prev=None):
     '''@brief a function used to assemble fixed source or fission source on the
     rhs for all components
     Generate numpy arrays and put them in self.
     '''
+    # Loop over groups
     f = sps.lil_matrix((nodes, 1))
     q = sps.lil_matrix((nodes, 1))
     j = sps.lil_matrix((nodes, 1))
@@ -24,15 +28,12 @@ class NDA(object):
     elem_qs = []
     elem_js = []
 
-    for m in num_materials:
+    for m in mat.ids():
       # Set up elementary matrices for each material
 
       # TODO: Retrieve cross-sections for cell
-      sigf = self.mat.sigf[g, m] # material and group check with josh
-      nu = self.mat.nu[g, m]
-        
-      # TODO: Calculate previous flux
-      flux_prev = 1 
+      sigf = self.mat.get('sig_t', mat_id=m)[g] # material and group check with josh
+      nu = self.mat.get('nu', mad_id=m)
         
       # TODO: Calculate j
       j = 1
@@ -45,7 +46,7 @@ class NDA(object):
       elem_j = np.zeros(4)
 
       for ii in xrange(4):
-        elem_f[ii] = nu*sigf*flux_prev*area
+        elem_f[ii] = nu*sigf*sflxes_prev[g]*area
         elem_q[ii] = q*area
         elem_j[ii] = 2*j*perimeter
 
@@ -79,6 +80,10 @@ class NDA(object):
     return sps.csc_matrix(RHS)
 
   def assemble_bilinear_forms(self):
+      for g in xrange(self.n_grp):
+          self.assemble_group_bilinear_forms(g)
+
+  def assemble_group_bilinear_forms(self,g):
     '''@brief Function used to assemble bilinear forms
     Must be called only once.
     '''
@@ -86,39 +91,39 @@ class NDA(object):
     B = sps.lil_matrix((nodes, nodes))
     C = sps.lil_matrix((nodes, nodes))
 
-    # TODO: Retrieve cross-sections for cell
-    sigt = self.mat.sigt[g] # ask josh
-    D = 1/(3*sigt)
-    siga = sigt - self.mat.sigs[g]
-    sigf = self.mat.sigf[g]
-    nu = self.mat.nu[g]
-      
-    # TODO: Calculate previous flux
-    flux_prev = 1 
-        
-    # TODO: Calculate kappa
-    kappa = 1
-        
-    # TODO: Calculate j
-    j = 1
+    elem_As = [] # list of elementary matrices based on material
+    elem_Bs = []
+    elem_Cs = []
 
-    # Find Local Basis Functions
-    # Set up Vandermonde Matrix
-    V = np.array([[1, 0, 0, 0],
+    for m in num_materials:
+      # TODO: Retrieve cross-sections for cell
+      sigt = self.mat.sigt[m, g] # ask josh
+      D = self.mat.D[m, g]
+      siga = self.mat.siga[m, g]
+      sigf = self.mat.sigf[g]
+      nu = self.mat.nu[g]
+        
+      # TODO: Calculate kappa
+      kappa = 1
+
+      # TODO: Make function called basis_coefficients
+      # Find Local Basis Functions
+      # Set up Vandermonde Matrix
+      V = np.array([[1, 0, 0, 0],
                   [1, 0, h, 0],
                   [1, h, 0, 0],
                   [1, h, h, h**2]])
-    C = np.linalg.inv(V)
+      C = np.linalg.inv(V)
         
-    # Assemble Elementary Matrix
-    # A_ab = area(partial_ax*partial_bx + partial_ay*partial_by)
-    area = h**2
-    perimeter = 4*h
-    elem_A = np.zeros((4, 4))
-    elem_B = np.zeros((4, 4))
-    elem_C = np.zeros((4, 4))
+      # Assemble Elementary Matrix
+      # A_ab = area(partial_ax*partial_bx + partial_ay*partial_by)
+      area = h**2
+      perimeter = 4*h
+      elem_A = np.zeros((4, 4))
+      elem_B = np.zeros((4, 4))
+      elem_C = np.zeros((4, 4))
 
-    for ii in xrange(4):
+      for ii in xrange(4):
         for jj in xrange(4):
             partial_ax = C[1, ii]+C[3, ii]*V[ii, 2]
             partial_bx = C[1, jj]+C[3, jj]*V[jj, 2]
@@ -128,11 +133,18 @@ class NDA(object):
             elem_A[ii,jj] = D*area*grad_ab
             elem_B[ii, jj] = driftVec*area*(partial_bx + partial_by)
             elem_D[ii,jj] = .5*kappa*perimeter
-   
+      
+      # Append elementary matrix to list of matrices by material
+      elem_As.append(elem_A)
+      elem_Bs.append(elem_B)
+      elem_Cs.append(elem_C)
+
     # Assemble Global Matrix
     for cell in xrange(n):
       cell_i = cell//int(np.sqrt(n))
       cell_j = cell%int(np.sqrt(n))
+
+      m = # find material number of cell
 
       # Global to Local node mapping
       """Nodes are flattened by row with row x=0 going first.
@@ -144,25 +156,14 @@ class NDA(object):
       for ii in mapping:
         yy = 0
         for jj in mapping:
-          A[ii, jj] += elem_A[xx, yy]
-          B[ii, jj] += elem_B[xx, yy]
-          C[ii, jj] += elem_C[xx, yy]
+          A[ii, jj] += elem_A[m, xx, yy]
+          B[ii, jj] += elem_B[m, xx, yy]
+          C[ii, jj] += elem_C[m, xx, yy]
           yy += 1
         xx += 1
+
     LHS = A + B + C
     return sps.csc_matrix(LHS)
-
-  
-  def assemble_linear_forms(self):
-    '''@brief Function used to assemble all linear forms
-    Different from assemble_group_linear_forms, which assembles linear forms
-    for a specific group, this function calls assemble_group_linear_forms to
-    assemble linear forms for all groups
-    --------
-    This function will only be called when NDA is used.
-    '''
-    return [self.assemble_group_linear_forms(g) 
-              for g in xrange(self.mat.n_group)]
 
 
   def assemble_group_linear_forms(self,g):
@@ -170,7 +171,8 @@ class NDA(object):
     '''
     assert 0<=g<=self.mat.n_group, 'Group index out of range'
     # TODO: fill in linear form assembly code
-  
+    # Scattering + fixed source 
+
   def solve_in_group(self):
     '''@brief Called to solve direction by direction inside Group g
     @param g Group index

@@ -6,7 +6,7 @@ import numpy as np
 
 # Set domain boundaries, assuming square domain
 DOMAIN_LOWER = 0
-DOMAIN_UPPER = 10
+DOMAIN_UPPER = 1
 
 # Import number of cells from input
 CELLS = problem["mesh_cells"]
