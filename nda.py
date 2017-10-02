@@ -2,20 +2,60 @@ import numpy as np
 import scipy.sparse as sps
 
 class NDA(object):
-    def __init__(self, mat, mat_map):
+    def __init__(self, mat, mat_map, mesh):
         """ @brief constructor of NDA class
 
         @param mat of type material.material. """
-    
+        # Geometry Information
+        self.n = mesh.CELLS # number of cells
+        self.h = mesh.CELL_LENGTH # length of cells
+        self.n_x = int(domain_length/self.h) # number of mesh cells in each direction
+        self.nodes_x = int(self.n_x + 1) # number of node points in each direction
+        self.nodes = int(self.nodes_x**2) # number of total node points
+        # Materials Information
         self.mat = mat # materials library
         self.mat_map = mat_map # materials map
         self.num_materials = len(mat.ids()) # extract number of materials 
         self.n_grp = mat.n_grps # number of groups
-        # matrices and vectors
+        # Matrices and Vectors
         self.sys_mats = [0] * self.n_grp
         self.sys_rhses = [0] * self.n_grp
         self.fixed_rhses = [0] * self.n_grp
 
+    def drift_vector(self, sflxes_prev=None, g):
+        weight = .5 # gauss-legendre weight for 2 points in half-interval
+        driftVec = np.array(n)
+        for cell in xrange(n):
+            cell_i = cell//int(np.sqrt(n))
+            cell_j = cell%int(np.sqrt(n))
+
+            mat_id = mat_map.get('id', n) # retrieve material id
+            m = materials.index(mat_id)
+            inv_sigt = self.mat.get('inv_sigt', mat_id=m)[g]
+            # retrieve fluxes at local nodes 0-3
+            mapping = np.array([cell+cell_i, cell+cell_i+1, 
+                        cell+cell_i+n_x+1, cell+cell_i+n_x+2])
+            lflx = sflxes_prev[mapping] #local fluxes
+
+            # calculate fluxes at gauss-legandre points
+            glflx = np.zeros(4)
+            glpoint = .5*np.sqrt(1/3.0) + .5 # g-l point for 2 points on half interval
+            deltax0 = np.abs(lflx[1] - lflx[0])
+            deltay0 = np.abs(lflx[0] - lflx[2])
+            deltax3 = np.abs(lflx[2] - lflx[3])
+            deltay3 = np.abs(lflx[1] - lflx[3])
+            glflx[0] = lflx[0] + (deltax0 + deltay0)*glpoint
+            glflx[1] = lflx[1] + (deltay3 - deltax0)*glpoint
+            glflx[2] = lflx[2] + (deltax3 - deltay0)*glpoint
+            glflx[3] = lflx[3] - (deltax3 + deltay3)*glpoint
+
+            # TODO: Actual calculation for drift vector
+            for m in xrange(4):
+                num += weight*(inv_sigt) 
+                den += weight*glflx[m]
+            driftVec[cell] = num/den
+        return driftVec
+            
     def assemble_fixed_linear_forms(self, sflxes_prev=None):
         '''@brief a function used to assemble fixed source or fission source on the
         rhs for all components
@@ -177,15 +217,15 @@ class NDA(object):
         for g in xrange(self.n_grp):
             sys_mats[g] = self.assemble_group_bilinear_forms(g)
 
-  def solve_in_group(self):
-    '''@brief Called to solve direction by direction inside Group g
-    @param g Group index
-    '''
-    assert 0<=g<=self.n_grp, 'Group index out of range'
-    # if not factorized, factorize the the HO matrices
-    if lu[g]==0:
-        lu[g] = sla.splu(self.sys_mats[g])
-    self.aflxes[g] = lu[g].solve(self.sys_rhses[g])
+    def solve_in_group(self):
+        '''@brief Called to solve direction by direction inside Group g
+        @param g Group index
+        '''
+        assert 0<=g<=self.n_grp, 'Group index out of range'
+        # if not factorized, factorize the the HO matrices
+        if lu[g]==0:
+            lu[g] = sla.splu(self.sys_mats[g])
+        self.aflxes[g] = lu[g].solve(self.sys_rhses[g])
 
 
 
