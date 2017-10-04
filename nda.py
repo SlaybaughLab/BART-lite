@@ -100,6 +100,7 @@ class NDA(object):
                 # Retrieve cross-sections for cell
                 sigf = self.mat.get('sig_f', mat_id=m)[g] # material and group 
                 nu = self.mat.get('nu', mad_id=m)
+                chi = self.mat.get('chi', mat_id=m)
         
                 # TODO: Calculate j
                 j = 1
@@ -109,7 +110,7 @@ class NDA(object):
                 elem_j = np.zeros(4)
 
                 for ii in xrange(4):
-                    elem_f[ii] = nu*sigf*sflxes_prev[g]*area
+                    elem_f[ii] = chi*nu*sigf*sflxes_prev[g]*area
                     elem_q[ii] = q*area
                     elem_j[ii] = 2*j*perimeter
 
@@ -129,14 +130,20 @@ class NDA(object):
                 and node x1,y1 in cell0 has a global index of nodes_x+1"""
                 mapping = np.array([cell+cell_i, cell+cell_i+1, 
                             cell+cell_i+n_x+1, cell+cell_i+n_x+2])
+                
+                # Check for boundary cells
+                if cell_i == 0 or cell_i == n_x-1 or cell_j == 0 or cell_j ==n_x-1:
+                    xx = 0
+                    for ii in mapping:
+                        j[ii, 0] += elem_js[m, xx]
+                        xx += 1 
+                else:
+                    pass
+
                 xx = 0
                 for ii in mapping:
-                    yy = 0
-                    for jj in mapping:
-                        f[ii, 0] += elem_fs[m, xx]
-                        q[ii, 0] += elem_qs[m, xx]
-                        j[ii, 0] += elem_js[m, xx]
-                        yy += 1
+                    f[ii, 0] += elem_fs[m, xx]
+                    q[ii, 0] += elem_qs[m, xx]
                     xx += 1
 
             fixed_rhs = f + q + j
@@ -191,7 +198,7 @@ class NDA(object):
                     partial_by = C[2, jj]+C[3, jj]*V[jj, 1]
                     grad_ab = partial_ax*partial_bx + partial_ay*partial_by
                     elem_A[ii,jj] = D*area*grad_ab
-                    elem_B[ii, jj] = driftVec*area*(partial_bx + partial_by)
+                    elem_B[ii, jj] = area*(partial_bx + partial_by) # driftVec is calculated with cells
                     elem_D[ii,jj] = .5*kappa*perimeter
       
             # Append elementary matrix to list of matrices by material
@@ -200,9 +207,11 @@ class NDA(object):
             elem_Cs.append(elem_C)
 
         # Assemble Global Matrix
+        driftVec = drift_vector(sflxes_prev, g)
         for cell in xrange(n):
             cell_i = cell//int(np.sqrt(n))
             cell_j = cell%int(np.sqrt(n))
+
 
             mat_id = mat_map.get('id', n) # retrieve material id
             m = materials.index(mat_id)   # find material index
@@ -213,12 +222,24 @@ class NDA(object):
             and node x1,y1 in cell0 has a global index of nodes_x+1"""
             mapping = np.array([cell+cell_i, cell+cell_i+1, 
                             cell+cell_i+n_x+1, cell+cell_i+n_x+2])
+            # Check for boundary cells
+            if cell_i == 0 or cell_i == n_x-1 or cell_j == 0 or cell_j ==n_x-1:
+                xx = 0
+                for ii in mapping:
+                    yy = 0
+                    for jj in mapping:
+                        C[ii, jj] += elem_C[m, xx, yy]
+                    yy += 1
+                xx += 1 
+            else:
+                pass
+
             xx = 0
             for ii in mapping:
                 yy = 0
                 for jj in mapping:
                     A[ii, jj] += elem_A[m, xx, yy]
-                    B[ii, jj] += elem_B[m, xx, yy]
+                    B[ii, jj] += elem_B[m, xx, yy]*driftVec[n]
                     C[ii, jj] += elem_C[m, xx, yy]
                 yy += 1
             xx += 1
