@@ -1,8 +1,9 @@
 import numpy as np
 import scipy.sparse as sps
+import elem as el
 
 class NDA(object):
-    def __init__(self, mat, mat_map, mesh):
+    def __init__(self, mat, mat_map, aq_cls, mesh):
         """ @brief constructor of NDA class
 
         @param mat of type material.material. """
@@ -17,42 +18,61 @@ class NDA(object):
         self.mat_map = mat_map # materials map
         self.num_materials = len(mat.ids()) # extract number of materials 
         self.n_grp = mat.n_grps # number of groups
+        # Angular data
+        self.omega = aq_cls['omega']
+        self.w_ang = aq_cls['wt']
+        self.n_dir = aq_cls['n_dir']
         # Matrices and Vectors
         self.sys_mats = [0] * self.n_grp
         self.sys_rhses = [0] * self.n_grp
         self.fixed_rhses = [0] * self.n_grp
+        self.driftVec = np.array(n)
+
+    def _gauss_quad(self, sol, dim=2):
+        ''' Takes a solution vector and calculates quadrature 
+        based on gauss-legendre weights. Only implemented for 3 points per dim.'''
+        assert np.len(sol) = 3**dim
+        w = np.array([5/9, 8/9, 5/9])
+        cell_avg = 0
+        if dim == 1:
+            for i in xrange(3):
+                cell_avg += .5*w[i]*sol[i]
+        elif dim == 2:
+            for i in xrange(3):
+                for j in xrange(3):
+                    cell_avg += .25*w[i]*w[j]*sol[3*i+j]
+        else:
+            raise ValueError('Dimension not suppported')
+
+        return cell_avg
+
 
     def drift_vector(self, sflxes_prev=None, g):
-        weight = .5 # gauss-legendre weight for 2 points in half-interval
-        driftVec = np.array(n)
         for cell in xrange(n):
             cell_i = cell//int(np.sqrt(n))
             cell_j = cell%int(np.sqrt(n))
 
-            mat_id = mat_map.get('id', n) # retrieve material id
+            # Retrieve material dependent data
+            mat_id = mat_map.get('id', n) 
             m = materials.index(mat_id)
             inv_sigt = self.mat.get('inv_sigt', mat_id=m)[g]
-            # retrieve fluxes at local nodes 0-3
+            D = self.mat.get('D', mat_id=m)[g]
+
+            # Get solution values at quadrature points and solve for cell flux
             mapping = np.array([cell+cell_i, cell+cell_i+1, 
                         cell+cell_i+n_x+1, cell+cell_i+n_x+2])
-            lflx = sflxes_prev[mapping] #local fluxes
+            sol_at_vertices = sflxes_prev[mapping]
+            quad_sol = el.get_sol_at_qps(sol_at_vertices)
+            flux_prev = _gauss_quad(quad_sol, dim=2)
 
-            # calculate fluxes at gauss-legandre points
-            glflx = np.zeros(4)
-            glpoint = .5*np.sqrt(1/3.0) + .5 # g-l point for 2 points on half interval
-            deltax0 = np.abs(lflx[1] - lflx[0])
-            deltay0 = np.abs(lflx[0] - lflx[2])
-            deltax3 = np.abs(lflx[2] - lflx[3])
-            deltay3 = np.abs(lflx[1] - lflx[3])
-            glflx[0] = lflx[0] + (deltax0 + deltay0)*glpoint
-            glflx[1] = lflx[1] + (deltay3 - deltax0)*glpoint
-            glflx[2] = lflx[2] + (deltax3 - deltay0)*glpoint
-            glflx[3] = lflx[3] - (deltax3 + deltay3)*glpoint
+            # Get grad values at quadrature points and solve for cell grad
+            quad_grad = el.get_grad_at_qps(sol_at_vertices)
+            grad_prev = _gauss_quad(quad_grad, dim=2)
 
-            # TODO: Actual calculation for drift vector
-            for m in xrange(4):
-                num += weight*(inv_sigt) 
-                den += weight*glflx[m]
+            # Calculation for drift vector
+            for dir in xrange(self.n_dir):
+                num += self.w_ang[dir]*(inv_sigt*omega[dir]**2*grad_prev - D*grad_prev) 
+                den += self.w_ang[dir]*flux_prev
             driftVec[cell] = num/den
         return driftVec
             
