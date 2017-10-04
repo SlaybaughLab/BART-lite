@@ -61,11 +61,11 @@ class NDA(object):
         rhs for all components
         Generate numpy arrays and put them in self.
         '''
-        f = sps.lil_matrix((nodes, 1))
+        f = sps.lil_matrix((nodes, 1)) # just use numpy array
         q = sps.lil_matrix((nodes, 1))
         j = sps.lil_matrix((nodes, 1))
 
-        elem_fs = [] # list of elementary matrices based on material
+        elem_fs = [] # list of elementary vector based on material
         elem_qs = []
         elem_js = []
     
@@ -78,7 +78,7 @@ class NDA(object):
             for m in materials:
             
                 # Retrieve cross-sections for cell
-                sigf = self.mat.get('sig_f', mat_id=m)[g] # material and group check with josh
+                sigf = self.mat.get('sig_f', mat_id=m)[g] # material and group 
                 nu = self.mat.get('nu', mad_id=m)
         
                 # TODO: Calculate j
@@ -141,6 +141,7 @@ class NDA(object):
 
         # Find Local Basis Functions
         # Set up Vandermonde Matrix
+        # TODO: use one in elem.py
         V = np.array([[1, 0, 0, 0],
                   [1, 0, h, 0],
                   [1, h, 0, 0],
@@ -203,8 +204,7 @@ class NDA(object):
             xx += 1
 
         lhs = A + B + C
-        return sps.csc_matrix(lhs)
-
+        return sps.csc_matrix(lhs) # don't return
 
     def assemble_group_linear_forms(self,g):
         '''@brief Function used to assemble linear forms for Group g
@@ -215,17 +215,17 @@ class NDA(object):
 
     def assemble_bilinear_forms(self):
         for g in xrange(self.n_grp):
-            sys_mats[g] = self.assemble_group_bilinear_forms(g)
+            self.sys_mats[g] = self.assemble_group_bilinear_forms(g)
 
-    def solve_in_group(self):
+    def solve_in_group(self, g):
         '''@brief Called to solve direction by direction inside Group g
         @param g Group index
         '''
-        assert 0<=g<=self.n_grp, 'Group index out of range'
+        assert 0<=g<self.n_grp, 'Group index out of range'
         # if not factorized, factorize the the HO matrices
-        if lu[g]==0:
-            lu[g] = sla.splu(self.sys_mats[g])
-        self.aflxes[g] = lu[g].solve(self.sys_rhses[g])
+        if self.lu[g]==0:
+            self.lu[g] = sla.splu(self.sys_mats[g])
+        self.aflxes[g] = self.lu[g].solve(self.sys_rhses[g])
 
 
 
