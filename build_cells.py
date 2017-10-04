@@ -14,6 +14,7 @@ CELLS = problem["mesh_cells"]
 # Calculate domain and cell lengths
 DOMAIN_LENGTH = DOMAIN_UPPER - DOMAIN_LOWER
 CELL_LENGTH = DOMAIN_LENGTH/CELLS
+CELL_AREA = CELL_LENGTH**2
 
 # Initialize Cells, MetaData, and Coordinates
 Cell=namedtuple("Cell", ["i", "j"]) 
