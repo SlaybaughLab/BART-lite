@@ -27,6 +27,7 @@ class NDA(object):
         self.sys_rhses = [0] * self.n_grp
         self.fixed_rhses = [0] * self.n_grp
         self.driftVec = np.array(n)
+        self.kappa = np.array(n)
 
     def _gauss_quad(self, sol, dim=2):
         ''' Takes a solution vector and calculates quadrature 
@@ -73,8 +74,32 @@ class NDA(object):
             for dir in xrange(self.n_dir):
                 num += self.w_ang[dir]*(inv_sigt*omega[dir]**2*grad_prev - D*grad_prev) 
                 den += self.w_ang[dir]*flux_prev
-            driftVec[cell] = num/den
-        return driftVec
+            self.driftVec[cell] = num/den
+
+    def kappa(self, sflxes_prev=None, g):
+        for cell in xrange(n):
+            cell_i = cell//int(np.sqrt(n))
+            cell_j = cell%int(np.sqrt(n))
+
+            if {cell_i, cell_j} & {0, n_x-1}:
+                # Retrieve material dependent data
+                mat_id = mat_map.get('id', n) 
+                m = materials.index(mat_id)
+
+                # Get solution values at quadrature points and solve for cell flux
+                mapping = np.array([cell+cell_i, cell+cell_i+1, 
+                        cell+cell_i+n_x+1, cell+cell_i+n_x+2])
+                sol_at_vertices = sflxes_prev[mapping]
+                quad_sol = el.get_sol_at_qps(sol_at_vertices)
+                flux_prev = _gauss_quad(quad_sol, dim=2)
+
+                # Calculation for drift vector
+                for dir in xrange(self.n_dir):
+                    num += self.w_ang[dir]*omega[dir]*flux_prev
+                    den += self.w_ang[dir]*flux_prev
+                self.kappa[cell] = 2*num/den
+            else:
+                pass
             
     def assemble_fixed_linear_forms(self, sflxes_prev=None):
         '''@brief a function used to assemble fixed source or fission source on the
@@ -132,7 +157,7 @@ class NDA(object):
                             cell+cell_i+n_x+1, cell+cell_i+n_x+2])
                 
                 # Check for boundary cells
-                if cell_i == 0 or cell_i == n_x-1 or cell_j == 0 or cell_j ==n_x-1:
+                if {cell_i, cell_j} & {0, n_x-1}:
                     xx = 0
                     for ii in mapping:
                         j[ii, 0] += elem_js[m, xx]
@@ -181,8 +206,6 @@ class NDA(object):
             sigf = self.mat.get('sig_f', mat_id=m)[g]
             nu = self.mat.get('nu', mat_id=m)
         
-            # TODO: Calculate kappa
-            kappa = 1
         
             # Assemble Elementary Matrix
             elem_A = np.zeros((4, 4))
@@ -197,8 +220,8 @@ class NDA(object):
                     partial_by = C[2, jj]+C[3, jj]*V[jj, 1]
                     grad_ab = partial_ax*partial_bx + partial_ay*partial_by
                     elem_A[ii,jj] = D*area*grad_ab
-                    elem_B[ii, jj] = area*(partial_bx + partial_by) # driftVec is calculated with cells
-                    elem_D[ii,jj] = .5*kappa*perimeter
+                    elem_B[ii,jj] = area*(partial_bx + partial_by) # driftVec is calculated with cells
+                    elem_C[ii,jj] = .5*perimeter # kappa is calculated with cells
       
             # Append elementary matrix to list of matrices by material
             elem_As.append(elem_A)
@@ -221,12 +244,12 @@ class NDA(object):
             mapping = np.array([cell+cell_i, cell+cell_i+1, 
                             cell+cell_i+n_x+1, cell+cell_i+n_x+2])
             # Check for boundary cells
-            if cell_i == 0 or cell_i == n_x-1 or cell_j == 0 or cell_j ==n_x-1:
+            if {cell_i, cell_j} & {0, n_x-1}:
                 xx = 0
                 for ii in mapping:
                     yy = 0
                     for jj in mapping:
-                        C[ii, jj] += elem_C[m, xx, yy]
+                        C[ii, jj] += elem_C[m, xx, yy]*self.kappa[n]
                     yy += 1
                 xx += 1 
             else:
