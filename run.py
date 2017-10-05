@@ -3,16 +3,27 @@ from input import problem
 from mesh import mesh_gen
 import matplotlib.pyplot as plt
 import build_cells
-import fempoi2d
+import nda
+import materials
 
+# Geometry Setup
 DOMAIN_LOWER = build_cells.DOMAIN_LOWER
 DOMAIN_UPPER = build_cells.DOMAIN_UPPER
 
-CELLS = problem["mesh_cells"]
+CELLS = problem["mesh cells"]
 DOMAIN_LENGTH = DOMAIN_UPPER - DOMAIN_LOWER
 CELL_LENGTH = DOMAIN_LENGTH/CELLS
 
 DATA = build_cells.cell_to_metadata
+
+# Materials Setup
+NUM_GRPS = problem["groups"]
+matlibs = []
+# matmaps = TODO: set up matmap
+for mats in problem["material files"]:
+  matlibs.append(materials.mat_lib(NUM_GRPS, files=mats))
+
+
 
 def main():
   u = fempoi2d.fempoi2d(CELL_LENGTH, DOMAIN_LENGTH, DATA)
