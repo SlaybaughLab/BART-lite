@@ -50,8 +50,7 @@ class SAAF(object):
         self._comp_dir = dict()
         self._generate_component_map()
         # local vectors
-        self._rhs_mats = dict()
-        self._preassembly_rhs()
+        self._rhs_mats = self._preassembly_rhs()
         # related to global matrices and vectors
         self._n_dof = mesh_cls.n_node()
         self._sys_mats = {}
@@ -77,32 +76,35 @@ class SAAF(object):
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src
 
+    def _group_dir_pairs(self):
+        return product(xrange(self._n_grp), xrange(self._n_dir))
+
     def _generate_component_map(self):
         '''@brief Internal function used to generate mappings between component,
         group and directions
         '''
-        gdpairs = product(xrange(self._n_grp), xrange(self._n_dir))
-        for ct, (g, d) in enumerate(gdpairs):
+        for ct, (g, d) in enumerate(self._group_dir_pairs()):
             # TODO: change to bidirectional map
             self._comp[(g, d)] = ct
             self._comp_grp[ct] = g
             self._comp_dir[ct] = d
 
+    def _group_dir_rhs(self, g, d, isigts, sigts):
+        '''RHS for each group and direction'''
+        ox, oy = self._aq['omega'][d]
+        # streaming & mass part of rhs
+        rhs_mat = (ox * self._elem.dxvu() + oy * self._elem.dyvu()
+            ) * isigts[g] + sigts[g] * self._elem.mass()
+        return rhs_mat
+
+    def _material_rhs(self, mid):
+        '''RHS for each material'''
+        sigts, isigts = self._sigts[mid], self._isigts[mid]
+        return {(g,d): self._group_dir_rhs(g, d, isigts, sigts)
+            for g, d in self._group_dir_pairs()}
+
     def _preassembly_rhs(self):
-        for mid in self._mids:
-            sigts, isigts = self._sigts[mid], self._isigts[mid]
-            rhs_mat_dict = {}
-            for g in xrange(self._n_grp):
-                for d in xrange(self._n_dir):
-                    ox, oy = self._aq['omega'][d]
-                    # streaming part of rhs
-                    rhs_mat = (ox * self._elem.dxvu() + oy * self._elem.dyvu()
-                               ) * isigts[g]
-                    # mass part of rhs
-                    rhs_mat += sigts[g] * self._elem.mass()
-                    # this rhs_mat as a value in rhs_mat_dict for current material
-                    rhs_mat_dict[(g, d)] = rhs_mat
-            self._rhs_mats[mid] = rhs_mat_dict
+        return {mid: self._material_rhs(mid) for mid in self._mids}
 
     def name(self):
         return self._name
