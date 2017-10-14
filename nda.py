@@ -237,7 +237,7 @@ class NDA(Formulation):
 
     def solve_ua(self):
         # assemble ua
-        self._assemble_ua_linear_form()
+        self._assemble_ua_linear_form(self._sflxes)
         if 'ua' not in self._lu:
             # factorize it if not yet
             self._lu['ua'] = sla.splu(self._sys_mats['ua'])
