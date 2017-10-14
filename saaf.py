@@ -20,6 +20,7 @@ class SAAF(object):
         # quantities of interest
         self._keff = 1.0
         self._keff_prev = 1.0
+        self._is_eigen = True # TODO: figure out where eigen bool gets set
         # preassembly-interpolation data
         self._elem = Elem(self._cell_length)
         # material data
@@ -79,7 +80,6 @@ class SAAF(object):
             self._comp[(g,d)] = ct
             self._comp_grp[ct] = g
             self._comp_dir[ct] = d
-                
 
     def _preassembly_rhs(self):
         for mid in self._mids:
@@ -217,7 +217,7 @@ class SAAF(object):
                             r_dir = self._aq['refl_dir'][(bd,d)]
                             odn = abs(self._aq['bd_angle'][(bd,d)])
                             bd_mass = self._elem.bdmt()[bd]
-                            bd_aflx = self._aflxes[self._comp(g,r_dir)][idx]
+                            bd_aflx = self._aflxes[self._comp[(g,r_dir)]][idx]
                             scat_bd_src += odn*np.dot(bd_mass,bd_aflx)
                 self._sys_rhses[cp][idx] += scat_bd_src
 
@@ -324,8 +324,8 @@ class SAAF(object):
             isgit = self._isigts[mat_id][g]
             # retrive grad_aflx for all directions at quadrature points
             grad_aflxes_qp = {
-            d:self._elem.get_grad_at_qps(self._aflxes[self._comp(g,d)][idx])
-            for d in self._n_dir}
+                d:self._elem.get_grad_at_qps(self._aflxes[self._comp[(g,d)]][idx])
+                for d in self._n_dir}
             sflxes_qp = self._elem.get_sol_at_qps(self._sflxes[g][idx])
             grad_sflx_qp = self._elem.get_grad_at_qps(self._sflxes[g][idx])
             # calculate correction for x and y components
