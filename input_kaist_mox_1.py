@@ -32,10 +32,10 @@ layout_dict={'43': 'mox_43',
              'bb': 'mox_87'}
 
 problem = {
-    "sn_order": 6,              # REQ: SN angular quadrature order
+    "sn_order": 2,              # REQ: SN angular quadrature order
     "do_nda": False,            # REQ: to determine whether or not to use NDA
     "do_ua": False,            # REQ: to determine use UA for NDA or not
-    "mesh_cells": 20,           # REQ: number of cells per side
+    "mesh_cells": 17,           # REQ: number of cells per side
     "groups": 7,                # REQ: number of energy groups
     "domain_upper": 10,         # REQ: domain size
     "materials": mats,          # REQ: list of xml material files

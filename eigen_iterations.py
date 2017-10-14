@@ -66,12 +66,12 @@ class Eigen(object):
         ep,ek,keff, = 1.0,1.0,1.0
         while ep>self._tol and ek>self._k_tol:
             # update scalar flux from previous iteration
-            for g in xrange(self._n_grp):
+            for g in xrange(n_grp):
                 equ_cls.update_sflxes(sflxes_eig_prev,g)
             # assemble for the fission source
             equ_cls.assemble_fixed_linear_forms(sflxes_prev=sflxes_eig_prev)
             # perform multigroup iteration to convergence
-            self.mg.mg_iterations(equ_cls=equ_cls)
+            self._mg.mg_iterations(equ_cls=equ_cls)
             # update keff
             keff_prev,keff = keff,equ_cls.calculate_keff()
             # calculate keff error

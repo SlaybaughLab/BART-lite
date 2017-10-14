@@ -22,8 +22,8 @@ class AQ(object):
         self._quad2d()
         # store the outward normal vectors on boundaries
         self._aq_data['bd_vec_n'] = {
-        'xmin':np.array([-1.,0]),'xmax':np.array([1.,0]),
-        'ymin':np.array([0,-1.]),'ymax':np.array([0,1.])}
+        'x_min':np.array([-1.,0]),'x_max':np.array([1.,0]),
+        'y_min':np.array([0,-1.]),'y_max':np.array([0,1.])}
         # get incident and reflective directions
         self._boundary_info()
 
@@ -60,7 +60,7 @@ class AQ(object):
         reflective angle index per boundary side and incident/outgoing angle on bd
         '''
         # bd_names
-        bd_names = ['xmin','ymin','xmax','ymax']
+        bd_names = ['x_min','y_min','x_max','y_max']
         # boundary normal vectors
         vn = [np.array([-1.,0]),np.array([0,-1.]),np.array([1.,0]),np.array([0,1.])]
         self._aq_data['bd_vec_n'] = {k:v for k,v in zip(bd_names,vn)}

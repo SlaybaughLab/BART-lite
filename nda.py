@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import sparse as sps
 from scipy.sparse import linalg as sla
-from itertools import product as pd
 from numpy.linalg import norm
 from elem import Elem
 
@@ -20,7 +19,7 @@ class NDA(object):
         # material ids and group info
         self._mids = mat_cls.get('ids')
         self._n_grp = mat_cls.get('n_grps')
-        self._g_thr = mat_cls.get('g_thermal')
+        self._g_thr = int(min(mat_cls.get('g_thermal').values()))
         # mesh
         self._mesh = msh_cls
         # problem type
@@ -47,8 +46,6 @@ class NDA(object):
         # fission source
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src
-        # assistance object
-        self._local_dof_pairs = pd(xrange(4),xrange(4))
 
     def name(self):
         return self._name
@@ -85,7 +82,7 @@ class NDA(object):
         # loop over cells for assembly
         for cell in self._mesh.cells():
             # get global dof index and mat id
-            idx,mid = cell.id(),cell.global_idx()
+            idx,mid = cell.get('id'),cell.global_idx()
             # corrections for all groups in current cell and ua
             corr_vecs = {}
             if correction:
@@ -105,14 +102,16 @@ class NDA(object):
                         cor_mat += corr_vecs['x_comp'][g][i]*cory[i]
                     diff_mats[(g,mid)] += cor_mat
                 # assemble global system
-                for ci,cj in self._local_dof_pairs:
-                    self._sys_mats[g][idx[ci],idx[cj]]+=diff_mats[(g,mid)][ci,cj]
+                for ci in xrange(4):
+                    for cj in xrange(4):
+                        self._sys_mats[g][idx[ci],idx[cj]]+=diff_mats[(g,mid)][ci,cj]
 
             # if we do upscattering acceleration
             if self._do_ua:
                 # assemble global system of ua matrix without correction
-                for ci,cj in self._local_dof_pairs:
-                    self._sys_mats['ua'][idx[ci],idx[cj]]+=diff_mats[('ua',mid)][ci,cj]
+                for ci in xrange(4):
+                    for cj in xrange(4):
+                        self._sys_mats['ua'][idx[ci],idx[cj]]+=diff_mats[('ua',mid)][ci,cj]
 
                 # correction matrix for upscattering acceleration
                 cor_mat_ua = np.zeros((4,4))
@@ -122,8 +121,9 @@ class NDA(object):
                                      corr_vecs['y_ua'][i]*cory[i])
                         diff_mats[('ua',mid)] += cor_mat_ua[ci,cj]
                 # mapping UA matrix to global
-                for ci,cj in self._local_dof_pairs:
-                    self._sys_mats['ua'][idx[ci],idx[cj]]+=diff_mats[('ua',mid)][ci,cj]
+                for ci in xrange(4):
+                    for cj in xrange(4):
+                        self._sys_mats['ua'][idx[ci],idx[cj]]+=diff_mats[('ua',mid)][ci,cj]
 
         # Transform system matrices to CSC format
         for g in xrange(self._n_grp):
@@ -140,7 +140,7 @@ class NDA(object):
         for g in xrange(self._n_grp):
             fixed_rhses[g] = np.array(self._mesh.n_node())
             for cell in self._mesh.cells():
-                idx,mid,fiss_src = cell.global_idx(),cell.id(),np.zeros(4)
+                idx,mid,fiss_src = cell.global_idx(),cell.get('id'),np.zeros(4)
                 for gi in filter(lambda: scaled_fiss_xsec[mid][g,x]>1.0e-14,xrange(self._n_grp)):
                     sflx_vtx = self._sflxes[g][idx] if not sflxes_prev else \
                                sflxes_prev[g][idx]
@@ -156,7 +156,7 @@ class NDA(object):
         # get mass matrix
         mass = self._elem.mass()
         for cell in mesh.cells:
-            idx,mid = cell.global_idx(),cell.id()
+            idx,mid = cell.global_idx(),cell.get('id')
             sigs = self._sigses[mid][g,:]
             scat_src = np.zeros(4)
             for gi in filter(lambda x: sigs[x]>1.0e-14 and x!=g,xrange(self._n_grp)):
@@ -172,7 +172,7 @@ class NDA(object):
         mass = self._elem.mass()
         self._sys_rhses['ua'] *= 0.0
         for cell in self._mesh.cells():
-            idx,mid,scat_src_ua = cell.global_idx(),cell.id(),np.zeros(4)
+            idx,mid,scat_src_ua = cell.global_idx(),cell.get('id'),np.zeros(4)
             for g in xrange(self._g_thr,self._n_grp-1):
                 for gi in xrange(g+1,self._n_grp):
                     sigs = self._sigses[mid][g,gi]
@@ -272,3 +272,6 @@ class NDA(object):
 
     def n_grp(self):
         return self._n_grp
+
+    def g_thr(self):
+        return self._g_thr

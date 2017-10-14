@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import sparse as sps
 from scipy.sparse import linalg as sla
-from itertools import product as pd
 from numpy.linalg import norm
 from elem import Elem
 from aq import AQ
@@ -20,7 +19,7 @@ class SAAF(object):
         self._elem = Elem(self._cell_length)
         # material data
         self._n_grp = mat_cls.get('n_grps')
-        self._g_thr = mat_cls.get('g_thermal')
+        self._g_thr = int(min(mat_cls.get('g_thermal').values()))
         self._sigts = mat_cls.get('sig_t')
         self._isigts = mat_cls.get('inv_sig_t')
         self._fiss_xsecs = mat_cls.get_per_str('chi_nu_sig_f')
@@ -55,6 +54,8 @@ class SAAF(object):
         self._aflxes = {k:np.ones(self._n_dof) for k in xrange(self._n_tot)}
         # scalar flux for current calculation
         self._sflxes = {k:np.ones(self._n_dof) for k in xrange(self._n_grp)}
+        # previous scalar flux for ingroup calculations
+        self._sflx_ig_prev = np.ones(self._n_dof)
         # linear solver objects
         self._lu = {}
         # source iteration tol
@@ -62,8 +63,6 @@ class SAAF(object):
         # fission source
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src
-        # assistance:
-        self._local_dof_pairs = pd(xrange(4),xrange(4))
 
     def _generate_component_map(self):
         '''@brief Internal function used to generate mappings between component,
@@ -80,6 +79,7 @@ class SAAF(object):
     def _preassembly_rhs(self):
         for mid in self._mids:
             sigts,isigts = self._sigts[mid],self._isigts[mid]
+            rhs_mat_dict = {}
             for g in xrange(self._n_grp):
                 for d in xrange(self._n_dir):
                     ox,oy = self._aq['omega'][d]
@@ -87,7 +87,9 @@ class SAAF(object):
                     rhs_mat = (ox*self._elem.dxvu()+oy*self._elem.dyvu())*isigts[g]
                     # mass part of rhs
                     rhs_mat += sigts[g]*self._elem.mass()
-                    self._rhs_mats[mid] = {(g,d):rhs_mat}
+                    # this rhs_mat as a value in rhs_mat_dict for current material
+                    rhs_mat_dict[(g,d)] = rhs_mat
+            self._rhs_mats[mid] = rhs_mat_dict
 
     def name(self):
         return self._name
@@ -122,8 +124,9 @@ class SAAF(object):
                 # retrieving global indices and material id per cell
                 idx,mid = cell.global_idx(),cell.get('id')
                 # mapping local matrices to global
-                for ci,cj in self._local_dof_pairs:
-                    sys_mat[idx[ci],idx[cj]] += lhs_mats[mid][ci][cj]
+                for ci in xrange(4):
+                    for cj in xrange(4):
+                        sys_mat[idx[ci],idx[cj]] += lhs_mats[mid][ci][cj]
                 # boundary part
                 if cell.bounds():
                     # loop over
@@ -131,11 +134,20 @@ class SAAF(object):
                         if self._aq['bd_angle'][(bd,d)]>0:
                             #outgoing boundary assembly: retrieving omega*n and boundary mass matrices
                             odn,bd_mass = self._aq['bd_angle'][(bd,d)],self._elem.bdmt()[bd]
+                            #print('dir: ',d,' bd: ',bd,' bd_angle: ',odn,' cell idx: ',cell.index())
                             # mapping local vertices to global
-                            for ci,cj in self._local_dof_pairs:
-                                if bd_mass[ci][cj]>1.0e-14:
-                                    sys_mat[idx[ci],idx[cj]] += odn*bd_mass[ci][cj]
+                            for ci in xrange(4):
+                                for cj in xrange(4):
+                                    if bd_mass[ci][cj]>1.0e-14:
+                                        sys_mat[idx[ci],idx[cj]] += odn*bd_mass[ci][cj]
 
+            '''
+            # use this section only for generating sparsity pattern
+            if i==0:
+                import matplotlib.pyplot as plt
+                plt.spy(sys_mat, precision=0.1, markersize=.5)
+                plt.show()
+            '''
             # transform lil_matrix to csc_matrix for efficient computation
             self._sys_mats[i] = sps.csc_matrix(sys_mat)
 
@@ -150,7 +162,7 @@ class SAAF(object):
         # get properties per str scaled by keff
         for cp in xrange(self._n_tot):
             # re-init fixed rhs. This must be done at the beginning of calling this function
-            self._fixed_rhses[cp] = np.array(self._n_dof)
+            self._fixed_rhses[cp] = np.zeros(self._n_dof)
             # get group and direction indices
             g,d = self._comp_grp[cp],self._comp_dir[cp]
             for cell in self._mesh.cells():
@@ -236,23 +248,25 @@ class SAAF(object):
         '''
         assert 0<=g<self._n_grp, 'Group index out of range'
         # Source iteration
-        e,sflx_ig_prev = 1.0,np.ones(self._n_dof)
+        e = 1.0
         while e>self._tol:
+            print 'in group SAAF error: ',e
             # assemble group rhses
             self._assemble_group_linear_forms(g)
             # copy scalar flux
-            np.copyto(sflx_ig_prev, self._sflxes[g])
+            np.copyto(self._sflx_ig_prev, self._sflxes[g])
             self._sflxes[g] *= 0
             for d in xrange(self._n_dir):
                 # if not factorized, factorize the the HO matrices
                 cp = self._comp[(g,d)]
                 if cp not in self._lu:
+                    print 'factorize SAAF for component ',cp
                     self._lu[cp] = sla.splu(self._sys_mats[cp])
                 # solve direction d
                 self._aflxes[cp] = self._lu[cp].solve(self._sys_rhses[cp])
                 self._sflxes[g] += self._aq['wt'][d] * self._aflxes[cp]
             # calculate difference for SI convergence
-            e = norm(sflx_old_ig - self._sflxes[g],1) / norm (self._sflxes[g],1)
+            e = norm(self._sflx_ig_prev - self._sflxes[g],1) / norm (self._sflxes[g],1)
 
     #NOTE: this function has to be removed if abstract class is implemented
     def update_sflxes(self, sflxes_old, g):
@@ -348,3 +362,6 @@ class SAAF(object):
 
     def n_grp(self):
         return self._n_grp
+
+    def g_thr(self):
+        return self._g_thr
