@@ -28,10 +28,6 @@ class NDA(Formulation):
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src
 
-
-    def name(self):
-        return self._name
-
     def assemble_bilinear_forms(self, ho_cls=None, correction=False):
         '''@brief A function used to assemble bilinear forms of NDA for current
         iterations
@@ -229,31 +225,11 @@ class NDA(Formulation):
         # direct solve
         self._sflxes['ua'] = self._lu['ua'].solve(self._sys_rhses['ua'])
 
-    def get_sflxes(self, g):
-        '''@brief Function called outside to retrieve the scalar flux value for Group g
-
-        @param g Target group number
-        '''
-        return self._sflxes[g]
-
     def get_sflx_vtx(self, g, idx):
         return self._sflxes[g][idx]
 
-    def get_keff(self):
-        '''@brief A function used to retrieve keff
-
-        @return keff calculated in SAAF class
-        '''
-        return self._keff
 
     def do_ua(self):
         return self._do_ua
 
-    def n_dof(self):
-        return self._mesh.n_node()
 
-    def n_grp(self):
-        return self._n_grp
-
-    def g_thr(self):
-        return self._g_thr

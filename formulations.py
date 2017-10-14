@@ -28,3 +28,26 @@ class Formulation(object):
     self._sflxes = {k:np.ones(self._n_dof) for k in xrange(self._n_grp)}
     # linear solver objects
     self._lu = {}
+
+  def get_sflxes(self, g):
+        '''@brief Function called outside to retrieve the scalar flux value for Group g
+
+        @param g Target group number
+        '''
+        return self._sflxes[g]
+
+  def get_keff(self):
+        '''@brief A function used to retrieve keff
+
+        @return keff calculated in SAAF class
+        '''
+        return self._keff
+
+  def n_dof(self):
+        return self._mesh.n_node()
+
+  def n_grp(self):
+        return self._n_grp
+
+  def g_thr(self):
+        return self._g_thr
