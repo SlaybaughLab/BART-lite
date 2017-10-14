@@ -127,7 +127,7 @@ class NDA(Formulation):
         source
         '''
         # scale the fission xsec by keff
-        scaled_fiss_xsec = {k: v / self._keff for k, v in self._fiss_xsecs}
+        scaled_fiss_xsec = {k: v / self._keff for k, v in self._fiss_xsecs.items()}
         for g in xrange(self._n_grp):
             fixed_rhses[g] = np.array(self._mesh.n_node())
             for cell in self._mesh.cells():
