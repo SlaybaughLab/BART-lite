@@ -266,37 +266,6 @@ class SAAF(Formulation):
             e = norm(self._sflx_ig_prev - self._sflxes[g], 1) / norm(
                 self._sflxes[g], 1)
 
-    #NOTE: this function has to be removed if abstract class is implemented
-    def update_sflxes(self, sflxes_old, g):
-        '''@brief A function used to update scalar flux for group g
-
-        @param sflxes_old A dictionary
-        @param g Group index
-        '''
-        np.copyto(sflxes_old[g], self._sflxes[g])
-
-    def calculate_keff(self):
-        assert not self._is_eigen, 'only be called in eigenvalue problems'
-        # update the previous fission source and previous keff
-        self._global_fiss_src_prev, self._keff_prev = self._global_fiss_src, self._keff
-        # calculate the new fission source
-        self._global_fiss_src = self._calculate_fiss_src()
-        # calculate the new keff
-        self._keff = self._keff_prev * self._global_fiss_src / self._global_fiss_src_prev
-        return self._keff
-
-    def calculate_sflx_diff(self, sflxes_old, g):
-        '''@brief function used to generate ho scalar flux for Group g using
-        angular fluxes
-
-        @param sflx_old Scalar flux from previous generation
-        @param g The group index
-        @return double The relative difference between new and old scalar flux
-        '''
-        # return the l1 norm relative difference
-        return norm(
-            (self._sflxes[g] - sflxes_old[g]), 1) / norm(self._sflxes[g], 1)
-
     def calculate_nda_cell_correction(self, mat_id, idx, do_ua=False):
         # TODO: address the "9"
         corrs = {
