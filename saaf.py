@@ -310,13 +310,13 @@ class SAAF(Formulation):
             grad_aflxes_qp = {
                 d: self._elem.get_grad_at_qps(
                     self._aflxes[self._comp[(g, d)]][idx])
-                for d in self._n_dir
+                for d in xrange(self._n_dir)
             }
             sflxes_qp = self._elem.get_sol_at_qps(self._sflxes[g][idx])
             grad_sflx_qp = self._elem.get_grad_at_qps(self._sflxes[g][idx])
             # calculate correction for x and y components
             corx, cory = np.zeros(len(sflxes_qp)), np.zeros(len(sflxes_qp))
-            for i in len(sflxes_qp):
+            for i in xrange(len(sflxes_qp)):
                 # transport current
                 tc = np.zeros(2)
                 for d in xrange(self._n_dir):
