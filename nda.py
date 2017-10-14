@@ -1,3 +1,5 @@
+from itertools import product
+
 import numpy as np
 from scipy import sparse as sps
 from scipy.sparse import linalg as sla
@@ -31,7 +33,6 @@ class NDA(Formulation):
         self._sigrs_ua = mat_cls.get('sig_r_ua')
         self._dcoefs_ua = mat_cls.get('diff_coef_ua')
         self._is_eigen = prob_dict['is_eigen_problem']
-       
 
     def assemble_bilinear_forms(self, ho_cls=None, correction=False):
         '''@brief A function used to assemble bilinear forms of NDA for current
@@ -69,7 +70,7 @@ class NDA(Formulation):
         # loop over cells for assembly
         for cell in self._mesh.cells():
             # get global dof index and mat id
-            idx, mid = cell.get('id'), cell.global_idx()
+            mid, idx = cell.get('id'), cell.global_idx()
             # corrections for all groups in current cell and ua
             corr_vecs = {}
             if correction:
@@ -90,10 +91,9 @@ class NDA(Formulation):
                         cor_mat += corr_vecs['x_comp'][g][i] * cory[i]
                     diff_mats[(g, mid)] += cor_mat
                 # assemble global system
-                for ci in xrange(4):
-                    for cj in xrange(4):
-                        self._sys_mats[g][idx[ci], idx[cj]] += diff_mats[(
-                            g, mid)][ci, cj]
+                for ci, cj in product(xrange(4), xrange(4)):
+                    self._sys_mats[g][idx[ci], idx[cj]] += diff_mats[(
+                        g, mid)][ci, cj]
 
             # if we do upscattering acceleration
             if self._do_ua:
