@@ -9,39 +9,27 @@ from numpy.linalg import norm
 # Files from This Code
 from elem import Elem
 from aq import AQ
+from formulations import Formulation
 
 
-class SAAF(object):
+class SAAF(Formulation):
     def __init__(self, mat_cls, mesh_cls, prob_dict):
+        Formulation.__init__(self, mat_cls, mesh_cls, prob_dict)
         # name of the Equation
         self._name = 'saaf'
-        # mesh data
-        self._mesh = mesh_cls
-        self._cell_length = mesh_cls.cell_length()
-        # quantities of interest
-        self._keff = 1.0
-        self._keff_prev = 1.0
-        self._is_eigen = True  # TODO: figure out where eigen bool gets set
-        # preassembly-interpolation data
-        self._elem = Elem(self._cell_length)
         # material data
-        self._n_grp = mat_cls.get('n_grps')
-        self._g_thr = int(min(mat_cls.get('g_thermal').values()))
-        self._sigts = mat_cls.get('sig_t')
         self._isigts = mat_cls.get('inv_sig_t')
-        self._fiss_xsecs = mat_cls.get_per_str('chi_nu_sig_f')
         self._nu_sigfs = mat_cls.get('nu_sig_f')
-        self._sigses = mat_cls.get_per_str('sig_s')
-        self._dcoefs = mat_cls.get('diff_coef')
-        self._mids = mat_cls.ids()
         # derived material data
         self._ksi_ua = mat_cls.get('ksi_ua')
-        # problem type: is problem eigenvalue problem
         # aq data in forms of dictionary
         self._aq = AQ(prob_dict['sn_order']).get_aq_data()
         self._n_dir = self._aq['n_dir']
         # total number of components in HO
         self._n_tot = self._n_grp * self._n_dir
+        # linear algebra objects
+        self._sys_rhses = {k:np.ones(self._n_dof) for k in xrange(self._n_tot)}
+        self._fixed_rhses = {k:np.zeros(self._n_dof) for k in xrange(self._n_tot)}
         # get a component indexing mapping
         self._comp = dict()
         # component to group map
@@ -51,27 +39,12 @@ class SAAF(object):
         self._generate_component_map()
         # local vectors
         self._rhs_mats = self._preassembly_rhs()
-        # related to global matrices and vectors
-        self._n_dof = mesh_cls.n_node()
-        self._sys_mats = {}
-        # be very careful about the following
-        self._sys_rhses = {
-            k: np.ones(self._n_dof)
-            for k in xrange(self._n_tot)
-        }
-        self._fixed_rhses = {
-            k: np.zeros(self._n_dof)
-            for k in xrange(self._n_tot)
-        }
         self._aflxes = {k: np.ones(self._n_dof) for k in xrange(self._n_tot)}
-        # scalar flux for current calculation
-        self._sflxes = {k: np.ones(self._n_dof) for k in xrange(self._n_grp)}
         # previous scalar flux for ingroup calculations
         self._sflx_ig_prev = np.ones(self._n_dof)
-        # linear solver objects
-        self._lu = {}
         # source iteration tol
         self._tol = 1.0e-7
+        self._is_eigen = True # TODO: get from prob_dict
         # fission source
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src

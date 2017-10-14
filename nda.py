@@ -2,50 +2,32 @@ import numpy as np
 from scipy import sparse as sps
 from scipy.sparse import linalg as sla
 from numpy.linalg import norm
+
+from formulations import Formulation
 from elem import Elem
 
-class NDA(object):
+class NDA(Formulation):
     def __init__(self, mat_cls, mesh_cls, prob_dict):
+        Formulation.__init__(self, mat_cls, mesh_cls, prob_dict)
         # equation name
         self._name = 'nda'
-        # mesh data
-        self._mesh = mesh_cls
-        self._cell_length = mesh_cls.cell_length()
-        # quantities of interest
-        self._keff = 1.0
-        self._keff_prev = 1.0
-        # preassembly-interpolation data
-        self._elem = Elem(self._cell_length)
-        # material ids and group info
-        self._mids = mat_cls.get('ids')
-        self._n_grp = mat_cls.get('n_grps')
-        self._g_thr = int(min(mat_cls.get('g_thermal').values()))
-        # mesh
-        self._mesh = msh_cls
         # problem type
-        self._is_eigen = prob_dict['is_eigen_problem']
         self._do_ua = prob_dict['do_ua']
-        # linear algebra objects
-        self._sys_mats = {}
-        self._sys_rhses = {k:np.ones(self._n_dof) for k in xrange(self._n_tot)}
-        self._fixed_rhses = {k:np.zeros(self._n_dof) for k in xrange(self._n_tot)}
-        self._sflxes = {k:np.ones(self._n_dof) for k in xrange(self._n_grp)}
-        # linear solver objects
-        self._lu = {}
         # total number of components: keep consistency with HO
         self._n_tot = self._n_grp
+        # linear algebra objects
+        self._sys_rhses = {k:np.ones(self._n_dof) for k in xrange(self._n_tot)}
+        self._fixed_rhses = {k:np.zeros(self._n_dof) for k in xrange(self._n_tot)}
         # all material
-        self._dcoefs = mat_cls.get('diff_coef')
-        self._sigts = mat_cls.get('sig_t')
-        self._sigses = mat_cls.get('sig_s')
         self._sigrs = mat_cls.get('sig_r')
-        self._fiss_xsecs = mat_cls.get('chi_nu_sig_f')
         # derived material properties
         self._sigrs_ua = mat_cls.get('sig_r_ua')
         self._dcoefs_ua = mat_cls.get('diff_coef_ua')
+        self._is_eigen = prob_dict['is_eigen_problem']
         # fission source
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src
+
 
     def name(self):
         return self._name
