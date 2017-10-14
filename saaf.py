@@ -1,7 +1,12 @@
+# Python Standard Imports
+from itertools import product
+# Third Party Tools
 import numpy as np
 from scipy import sparse as sps
 from scipy.sparse import linalg as sla
 from numpy.linalg import norm
+
+# Files from This Code
 from elem import Elem
 from aq import AQ
 
@@ -68,13 +73,13 @@ class SAAF(object):
         '''@brief Internal function used to generate mappings between component,
         group and directions
         '''
-        ct = 0
-        for g in xrange(self._n_grp):
-            for d in xrange(self._n_dir):
-                self._comp[(g,d)] = ct
-                self._comp_grp[ct] = g
-                self._comp_dir[ct] = d
-                ct += 1
+        gdpairs = product(xrange(self._n_grp), xrange(self._n_dir))
+        for ct, (g, d) in enumerate(gdpairs):
+            # TODO: change to bidirectional map
+            self._comp[(g,d)] = ct
+            self._comp_grp[ct] = g
+            self._comp_dir[ct] = d
+                
 
     def _preassembly_rhs(self):
         for mid in self._mids:
