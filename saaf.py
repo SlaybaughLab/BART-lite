@@ -28,8 +28,14 @@ class SAAF(Formulation):
         # total number of components in HO
         self._n_tot = self._n_grp * self._n_dir
         # linear algebra objects
-        self._sys_rhses = {k:np.ones(self._n_dof) for k in xrange(self._n_tot)}
-        self._fixed_rhses = {k:np.zeros(self._n_dof) for k in xrange(self._n_tot)}
+        self._sys_rhses = {
+            k: np.ones(self._n_dof)
+            for k in xrange(self._n_tot)
+        }
+        self._fixed_rhses = {
+            k: np.zeros(self._n_dof)
+            for k in xrange(self._n_tot)
+        }
         # get a component indexing mapping
         self._comp = dict()
         # component to group map
@@ -44,7 +50,7 @@ class SAAF(Formulation):
         self._sflx_ig_prev = np.ones(self._n_dof)
         # source iteration tol
         self._tol = 1.0e-7
-        self._is_eigen = True # TODO: get from prob_dict
+        self._is_eigen = True  # TODO: get from prob_dict
         # fission source
         self._global_fiss_src = self._calculate_fiss_src()
         self._global_fiss_src_prev = self._global_fiss_src
@@ -67,14 +73,14 @@ class SAAF(Formulation):
         ox, oy = self._aq['omega'][d]
         # streaming & mass part of rhs
         rhs_mat = (ox * self._elem.dxvu() + oy * self._elem.dyvu()
-            ) * isigts[g] + sigts[g] * self._elem.mass()
+                   ) * isigts[g] + sigts[g] * self._elem.mass()
         return rhs_mat
 
     def _material_rhs(self, mid):
         '''RHS for each material'''
         sigts, isigts = self._sigts[mid], self._isigts[mid]
-        return {(g,d): self._group_dir_rhs(g, d, isigts, sigts)
-            for g, d in self._group_dir_pairs()}
+        return {(g, d): self._group_dir_rhs(g, d, isigts, sigts)
+                for g, d in self._group_dir_pairs()}
 
     def _preassembly_rhs(self):
         return {mid: self._material_rhs(mid) for mid in self._mids}
@@ -347,9 +353,3 @@ class SAAF(Formulation):
             corrs['y_ua'] = np.dot(self._ksi_ua[mat_id],
                                    corrs['y_comp'][self._g_thr:, ])
         return corrs
-
-
-
-
-
-
