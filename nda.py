@@ -47,6 +47,15 @@ class NDA(Formulation):
                     yield (g, mid), (dcoef * streaming + sigr * mass)
         return dict(diff_mats())
 
+    def _cor_mat(self, g, corr_vecs):
+        corx, cory = self._elem.corx(), self._elem.cory()
+        # TODO: fixed the "9"
+        for i in xrange(9):
+            # x-component
+            yield corr_vecs['x_comp'][g][i] * corx[i]
+            # y-component
+            # TODO: is this really supposed to be x_comp?
+            yield corr_vecs['x_comp'][g][i] * cory[i]
 
     def assemble_bilinear_forms(self, ho_cls=None, correction=False):
         '''@brief A function used to assemble bilinear forms of NDA for current
@@ -71,8 +80,7 @@ class NDA(Formulation):
                 dcoef_ua, sigr_ua = self._dcoefs_ua[mid], self._sigrs_ua[mid]
                 # basic elementary diffusion matrices for upscattering acceleration
                 diff_mats[('ua',
-                           mid)] = (dcoef_ua * streaming + sigr_ua * mass)
-
+                           mid)] = (dcoef_ua * streaming + sigr_ua * mass) 
         # loop over cells for assembly
         for cell in self._mesh.cells():
             # get global dof index and mat id
@@ -82,20 +90,12 @@ class NDA(Formulation):
             if correction:
                 corr_vecs = ho_cls.calculate_nda_cell_correction(
                     mat_id=mid, idx=idx)
-            for g in xrange(self._n_grp):
-                # if correction is asked
-                cor_mat = np.zeros((4, 4))
-                if correction:
-                    # calculate NDA correction in HO class
-                    corr_vecs[g] = ho_cls.calculate_nda_cell_correction(
-                        g=g, mat_id=mid, idx=idx)
-                    # TODO: fixed the "9"
-                    for i in xrange(9):
-                        # x-component
-                        cor_mat += corr_vecs['x_comp'][g][i] * corx[i]
-                        # y-component
-                        cor_mat += corr_vecs['x_comp'][g][i] * cory[i]
+                for g in xrange(self._n_grp):
+                    # if correction is asked
+                    #cor_mat = np.zeros((4, 4))
+                    cor_mat = sum(self._cor_mat(g, corr_vecs))
                     diff_mats[(g, mid)] += cor_mat
+            for g in xrange(self._n_grp):
                 # assemble global system
                 for ci, cj in product(xrange(4), xrange(4)):
                     self._sys_mats[g][idx[ci], idx[cj]] += diff_mats[(
