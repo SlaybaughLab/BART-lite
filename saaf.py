@@ -234,7 +234,7 @@ class SAAF(Formulation):
         for i in xrange(self._n_tot):
             if i not in self._lu:
                 # factorization
-                self._lu[i] = sla.splu(self._sys_mats[comp[(g, d)]])
+                self._lu[i] = sla.splu(self._sys_mats[i])
             # direct solve for angular fluxes
             self._aflxes[i] = self._lu[i].solve(self._sys_rhses[i])
 
