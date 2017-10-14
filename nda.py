@@ -34,6 +34,20 @@ class NDA(Formulation):
         self._dcoefs_ua = mat_cls.get('diff_coef_ua')
         self._is_eigen = prob_dict['is_eigen_problem']
 
+    def _create_diff_mats(self, streaming, mass):
+        def diff_mats():
+            # Elementary correction matrices
+            corx, cory, sigt, dcoef = self._elem.corx(), self._elem.cory(), 0, 0
+            for g in xrange(self._n_grp):
+                self._sys_mats[g] = sps.lil_matrix((self._mesh.n_node(),
+                                                    self._mesh.n_node()))
+                for mid in self._mids:
+                    sigt, sigr, dcoef = self._sigts[mid][g], self._sigrs[mid][
+                        g], self._dcoefs[mid][g]
+                    yield (g, mid), (dcoef * streaming + sigr * mass)
+        return dict(diff_mats())
+
+
     def assemble_bilinear_forms(self, ho_cls=None, correction=False):
         '''@brief A function used to assemble bilinear forms of NDA for current
         iterations
@@ -47,16 +61,8 @@ class NDA(Formulation):
         if correction:
             assert ho_cls is not None, 'ho_cls has to be filled in for NDA correction'
         # basic diffusion Elementary matrices
-        diff_mats = {}
-        # Elementary correction matrices
-        corx, cory, sigt, dcoef = self._elem.corx(), self._elem.cory(), 0, 0
-        for g in xrange(self._n_grp):
-            self._sys_mats[g] = sps.lil_matrix((self._mesh.n_node(),
-                                                self._mesh.n_node()))
-            for mid in self._mids:
-                sigt, sigr, dcoef = self._sigts[mid][g], self._sigrs[mid][
-                    g], self._dcoefs[mid][g]
-                diff_mats[(g, mid)] = (dcoef * streaming + sigr * mass)
+        diff_mats = self._create_diff_mats(streaming, mass)
+
         # preassembled matrices for upscattering acceleration
         if self._do_ua:
             self._sys_mats['ua'] = sps.lil_matrix((self._mesh.n_node(),
