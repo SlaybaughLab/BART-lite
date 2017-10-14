@@ -137,7 +137,7 @@ class NDA(Formulation):
                     sflx_vtx = self._sflxes[g][idx] if not sflxes_prev else \
                                sflxes_prev[g][idx]
                     fiss_src += scaled_fiss_xsec[mid][g, gi] * np.dot(
-                        mass, sflx_vtx)
+                        self._elem.mass(), sflx_vtx)
                 self._fixed_rhses[g][idx] += fiss_src
 
     def _assemble_group_linear_forms(self, g):
