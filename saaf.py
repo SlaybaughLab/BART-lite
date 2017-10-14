@@ -19,7 +19,6 @@ class SAAF(Formulation):
         self._name = 'saaf'
         # material data
         self._isigts = mat_cls.get('inv_sig_t')
-        self._nu_sigfs = mat_cls.get('nu_sig_f')
         # derived material data
         self._ksi_ua = mat_cls.get('ksi_ua')
         # aq data in forms of dictionary

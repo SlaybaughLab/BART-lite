@@ -21,6 +21,7 @@ class Formulation(object):
         self._sigts = mat_cls.get('sig_t')
         self._sigses = mat_cls.get_per_str('sig_s')
         self._fiss_xsecs = mat_cls.get('chi_nu_sig_f')
+        self._nu_sigfs = mat_cls.get('nu_sig_f')
         # related to global matrices and vectors
         self._n_dof = mesh_cls.n_node()
         # linear algebra objects
