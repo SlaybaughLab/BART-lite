@@ -133,7 +133,7 @@ class NDA(Formulation):
             for cell in self._mesh.cells():
                 idx, mid, fiss_src = cell.global_idx(), cell.get(
                     'id'), np.zeros(4)
-                for gi in filter(lambda: scaled_fiss_xsec[mid][g, x] > 1.0e-14,
+                for gi in filter(lambda x: scaled_fiss_xsec[mid][g, x] > 1.0e-14,
                                  xrange(self._n_grp)):
                     sflx_vtx = self._sflxes[g][idx] if not sflxes_prev else \
                                sflxes_prev[g][idx]
