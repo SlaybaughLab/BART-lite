@@ -46,7 +46,7 @@ class Formulation(object):
                     xrange(self._n_grp)):
                 sflx_vtx = sum(self._sflxes[g][idx])
                 global_fiss_src += nusigf[g] * sflx_vtx
-            return global_fiss_src
+        return global_fiss_src
 
     def name(self):
         return self._name
