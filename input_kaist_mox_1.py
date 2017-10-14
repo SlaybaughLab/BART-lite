@@ -33,7 +33,7 @@ layout_dict={'43': 'mox_43',
 
 problem = {
     "sn_order": 2,              # REQ: SN angular quadrature order
-    "do_nda": False,            # REQ: to determine whether or not to use NDA
+    "do_nda": True,            # REQ: to determine whether or not to use NDA
     "do_ua": False,            # REQ: to determine use UA for NDA or not
     "mesh_cells": 17,           # REQ: number of cells per side
     "groups": 7,                # REQ: number of energy groups
@@ -41,5 +41,6 @@ problem = {
     "materials": mats,          # REQ: list of xml material files
     "layout": layout_mox1,      # REQ: material layout to use
     "layout_dict": layout_dict, # REQ: material layout dictionary
-    "tr_scatt": True            # OP:  Take transp. of scatt. matrices
+    "tr_scatt": True,            # OP:  Take transp. of scatt. matrices
+    "is_eigen_problem": True
 }
