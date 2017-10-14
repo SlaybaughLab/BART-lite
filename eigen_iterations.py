@@ -31,7 +31,7 @@ class Eigen(object):
             # initialize scalar fluxes from previous finished NDA solve
             sflxes_eig_prev_nda = {g:np.ones(n_dof) for g in xrange(n_grp)}
             # we assemble and solve with diffusion first (namely, no correction)
-            nda_cls.assemble_bilinear_forms(nda_cls=None, correction=False)
+            nda_cls.assemble_bilinear_forms(ho_cls=None, correction=False)
             self.eigen_iterations(nda_cls)
             e_k,e_p = 1.,1.
             # get k
