@@ -324,7 +324,7 @@ class SAAF(Formulation):
                     tc += np.dot(self._aq['wt_tensor'][d],
                                  grad_aflxes_qp[d][i])
                 # minus diffusion current
-                mdc = dcoef * grad_sflx_qp
+                mdc = dcoef * grad_sflx_qp[i]
                 # corrections
                 corx[i], cory[i] = (isgit * tc + mdc) / sflxes_qp[i]
             # wrap corrections to corrs
