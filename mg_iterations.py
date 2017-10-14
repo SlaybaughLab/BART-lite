@@ -1,8 +1,9 @@
 import numpy as np
-
 '''
 class used to perform multigroup calculations
 '''
+
+
 class MG(object):
     def __init__(self):
         # iteration tol
@@ -35,27 +36,28 @@ class MG(object):
         Only to be called by self._do_iterations or in eigenvalue iterations
         '''
         # get number of groups and first thermal group
-        n_dof,n_grp,g_thr = equ_cls.n_dof(),equ_cls.n_grp(),equ_cls.g_thr()
+        n_dof, n_grp, g_thr = equ_cls.n_dof(), equ_cls.n_grp(), equ_cls.g_thr()
         # sflxes from previous MG iteration
-        sflxes_mg_prev = {g:np.ones(n_dof) for g in xrange(g_thr,n_grp)}
+        sflxes_mg_prev = {g: np.ones(n_dof) for g in xrange(g_thr, n_grp)}
         # Solve for fast and epithermal groups
-        for g in xrange(0,g_thr):
+        for g in xrange(0, g_thr):
             equ_cls.solve_in_group(g)
-            equ_cls.generate_sflx(g)
+            # equ_cls.generate_sflx(g) TODO: figure out what this is supposed to be
         # Solve for thermal groups
         e = 1.0
-        while e>self._tol:
+        while e > self._tol:
             for g in xrange(g_thr, n_grp):
                 # update old mg flux
-                equ_cls.update_sflxes(sflxes_mg_prev,g)
+                equ_cls.update_sflxes(sflxes_mg_prev, g)
                 # assemble linear form and solve in group
                 equ_cls.solve_in_group(g)
                 # calculate mg iteration error for group g
-            if equ_cls.name()=='nda' and equ_cls.do_ua():
+            if equ_cls.name() == 'nda' and equ_cls.do_ua():
                 # solve ua equation
                 equ_cls.solve_ua()
                 # update nda sflx after upscattering acceleration
                 equ_cls.update_ua()
             # calculate iteration errors in multigroup iterations
-            e = max(equ_cls.calculate_sflx_diff(sflxes_mg_prev,g)
-                    for g in xrange(g_thr, n_grp))
+            e = max(
+                equ_cls.calculate_sflx_diff(sflxes_mg_prev, g)
+                for g in xrange(g_thr, n_grp))
