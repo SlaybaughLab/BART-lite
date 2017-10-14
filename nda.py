@@ -148,7 +148,7 @@ class NDA(Formulation):
         np.copyto(self._sys_rhses[g], self._fixed_rhses[g])
         # get mass matrix
         mass = self._elem.mass()
-        for cell in mesh.cells:
+        for cell in self._mesh.cells():
             idx, mid = cell.global_idx(), cell.get('id')
             sigs = self._sigses[mid][g, :]
             scat_src = np.zeros(4)
