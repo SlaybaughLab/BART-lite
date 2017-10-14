@@ -31,9 +31,7 @@ class NDA(Formulation):
         self._sigrs_ua = mat_cls.get('sig_r_ua')
         self._dcoefs_ua = mat_cls.get('diff_coef_ua')
         self._is_eigen = prob_dict['is_eigen_problem']
-        # fission source
-        self._global_fiss_src = self._calculate_fiss_src()
-        self._global_fiss_src_prev = self._global_fiss_src
+       
 
     def assemble_bilinear_forms(self, ho_cls=None, correction=False):
         '''@brief A function used to assemble bilinear forms of NDA for current

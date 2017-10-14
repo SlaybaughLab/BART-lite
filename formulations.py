@@ -29,6 +29,26 @@ class Formulation(object):
         self._sflxes = {k: np.ones(self._n_dof) for k in xrange(self._n_grp)}
         # linear solver objects
         self._lu = {}
+        # fission source
+        self._global_fiss_src = self._calculate_fiss_src()
+        self._global_fiss_src_prev = self._global_fiss_src
+
+    def _calculate_fiss_src(self):
+        # loop over cells and groups and calculate nu_sig_f*phi
+        # NOTE: the following calculation is using mid-point rule for integration
+        # It will suffice only for constant,RT1 and bilinear finite elements.
+        global_fiss_src = 0
+        for cell in self._mesh.cells():
+            idx, mid = cell.global_idx(), cell.get('id')
+            nusigf = self._nu_sigfs[mid]
+            for g in filter(lambda x: nusigf[x] > 1.0e-14,
+                    xrange(self._n_grp)):
+                sflx_vtx = sum(self._sflxes[g][idx])
+                global_fiss_src += nusigf[g] * sflx_vtx
+            return global_fiss_src
+
+    def name(self):
+        return self._name
 
     def get_sflxes(self, g):
         '''@brief Function called outside to retrieve the scalar flux value for Group g

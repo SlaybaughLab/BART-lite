@@ -51,9 +51,7 @@ class SAAF(Formulation):
         # source iteration tol
         self._tol = 1.0e-7
         self._is_eigen = True  # TODO: get from prob_dict
-        # fission source
-        self._global_fiss_src = self._calculate_fiss_src()
-        self._global_fiss_src_prev = self._global_fiss_src
+
 
     def _group_dir_pairs(self):
         return product(xrange(self._n_grp), xrange(self._n_dir))
@@ -287,20 +285,6 @@ class SAAF(Formulation):
         # calculate the new keff
         self._keff = self._keff_prev * self._global_fiss_src / self._global_fiss_src_prev
         return self._keff
-
-    def _calculate_fiss_src(self):
-        # loop over cells and groups and calculate nu_sig_f*phi
-        # NOTE: the following calculation is using mid-point rule for integration
-        # It will suffice only for constant,RT1 and bilinear finite elements.
-        global_fiss_src = 0
-        for cell in self._mesh.cells():
-            idx, mid = cell.global_idx(), cell.get('id')
-            nusigf = self._nu_sigfs[mid]
-            for g in filter(lambda x: nusigf[x] > 1.0e-14,
-                            xrange(self._n_grp)):
-                sflx_vtx = sum(self._sflxes[g][idx])
-                global_fiss_src += nusigf[g] * sflx_vtx
-        return global_fiss_src
 
     def calculate_sflx_diff(self, sflxes_old, g):
         '''@brief function used to generate ho scalar flux for Group g using
