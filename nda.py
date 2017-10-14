@@ -187,7 +187,7 @@ class NDA(Formulation):
 
     #NOTE: this function has to be removed if abstract class is implemented
     def calculate_keff(self):
-        assert not self._is_eigen, 'only be called in eigenvalue problems'
+        assert self._is_eigen, 'only be called in eigenvalue problems'
         # update the previous fission source and previous keff
         self._global_fiss_src_prev, self._keff_prev = self._global_fiss_src, self._keff
         # calculate the new fission source
