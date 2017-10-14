@@ -26,7 +26,7 @@ class NDA(Formulation):
         self._fixed_rhses = {
             k: np.zeros(self._n_dof)
             for k in xrange(self._n_tot)
-        }
+        } # TODO: Put in tensor or numpy array, not dict
         # all material
         self._sigrs = mat_cls.get('sig_r')
         # derived material properties
@@ -129,7 +129,6 @@ class NDA(Formulation):
         # scale the fission xsec by keff
         scaled_fiss_xsec = {k: v / self._keff for k, v in self._fiss_xsecs.items()}
         for g in xrange(self._n_grp):
-            self._fixed_rhses[g] = np.array(self._mesh.n_node())
             for cell in self._mesh.cells():
                 idx, mid, fiss_src = cell.global_idx(), cell.get(
                     'id'), np.zeros(4)
