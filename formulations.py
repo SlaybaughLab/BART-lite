@@ -5,6 +5,7 @@ from elem import Elem
 
 class Formulation(object):
     def __init__(self, mat_cls, mesh_cls, prob_dict):
+        self._name = 'Formulation'
         # mesh data
         self._mesh = mesh_cls
         self._cell_length = mesh_cls.cell_length()
@@ -43,7 +44,7 @@ class Formulation(object):
             idx, mid = cell.global_idx(), cell.get('id')
             nusigf = self._nu_sigfs[mid]
             for g in filter(lambda x: nusigf[x] > 1.0e-14,
-                    xrange(self._n_grp)):
+                            xrange(self._n_grp)):
                 sflx_vtx = sum(self._sflxes[g][idx])
                 global_fiss_src += nusigf[g] * sflx_vtx
         return global_fiss_src

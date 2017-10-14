@@ -92,7 +92,6 @@ class NDA(Formulation):
                     mat_id=mid, idx=idx)
                 for g in xrange(self._n_grp):
                     # if correction is asked
-                    #cor_mat = np.zeros((4, 4))
                     cor_mat = sum(self._cor_mat(g, corr_vecs))
                     diff_mats[(g, mid)] += cor_mat
             for g in xrange(self._n_grp):

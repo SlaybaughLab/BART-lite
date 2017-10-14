@@ -7,6 +7,7 @@ import xml.etree.cElementTree as ET
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+
 class _mat():
     def __init__(self, filename, grps, tr_scatt=False):
         """ Constructor of a single material, reads from a provided
@@ -27,35 +28,36 @@ class _mat():
         assert os.path.exists(filename), "Material file: " + filename\
             + " does not exist"
 
-        self.n_grps  = grps
-        self.gen     = {}     # General properties
-        self.prop    = {}     # Physical properties
-        self.gconst  = {}     # Group non cross-section data
-        self.xsec    = {}     # Group cross-section data
-        self.derived = {}     # Derived quantities
+        self.n_grps = grps
+        self.gen = {}  # General properties
+        self.prop = {}  # Physical properties
+        self.gconst = {}  # Group non cross-section data
+        self.xsec = {}  # Group cross-section data
+        self.derived = {}  # Derived quantities
 
         # All dictionaries that hold material parameters
-        self.all_dict= [self.gen, self.prop, self.gconst,
-                        self.xsec, self.derived]
+        self.all_dict = [
+            self.gen, self.prop, self.gconst, self.xsec, self.derived
+        ]
 
         self.__parse_XML__(filename, grps)  # Parse input XML file
-        self.__validate__(filename)         # Validate material data
+        self.__validate__(filename)  # Validate material data
 
         # If needed, transpose scattering matrix
-        if 'sig_s' in self.xsec and tr_scatt: 
+        if 'sig_s' in self.xsec and tr_scatt:
             self.xsec['sig_s'] = np.transpose(self.xsec['sig_s'])
 
         if self.xsec:
-            self.__derive_xsec__()          # Calc other xsecs
-            
+            self.__derive_xsec__()  # Calc other xsecs
+
         if 'sig_t' in self.xsec:
-            self.__derive_sig_t__()         # Calc sig_t derv. prop
+            self.__derive_sig_t__()  # Calc sig_t derv. prop
 
         if 'sig_s' in self.xsec and 'g_thermal' in self.gconst:
-            self.__derive_thermal__()       # Calc thermal eigenvalues
+            self.__derive_thermal__()  # Calc thermal eigenvalues
 
         if self.isSource:
-            self.__derive_fiss__()          # Calc fission derv. prop
+            self.__derive_fiss__()  # Calc fission derv. prop
 
         if 'sig_t' in self.xsec and 'ksi_ua' in self.derived and\
            'g_thermal' in self.gconst:
@@ -72,8 +74,8 @@ class _mat():
         try:
             return next(d[prop] for d in self.all_dict if prop in d)
         except StopIteration:
-            raise RuntimeError("Invalid material property for "
-                               + self.gen['id'] + ": "+ prop)
+            raise RuntimeError("Invalid material property for " +
+                               self.gen['id'] + ": " + prop)
 
     # INITIALIZATION FUNCTIONS ========================================
 
@@ -81,8 +83,7 @@ class _mat():
         # Calculate acceleration properties
         i = int(self.gconst['g_thermal'])
 
-        sig_t_ua = np.dot(self.derived['ksi_ua'],
-                          self.xsec['sig_t'][i:])
+        sig_t_ua = np.dot(self.derived['ksi_ua'], self.xsec['sig_t'][i:])
 
         diff_coef_ua = np.dot(self.derived['ksi_ua'],
                               self.derived['diff_coef'][i:])
@@ -98,18 +99,15 @@ class _mat():
         self.derived.update({'sig_t_ua': sig_t_ua})
         self.derived.update({'diff_coef_ua': diff_coef_ua})
 
-
     def __derive_sig_t__(self):
         # Calculate derived quantities based on sig_t
 
         # Find non-zero entries of Sig_t
-        non_zero = self.xsec['sig_t']!=0
+        non_zero = self.xsec['sig_t'] != 0
         # Inverse Sig_t
-        inv_sig_t = np.power(self.xsec['sig_t'], -1,
-                                 where=non_zero)
+        inv_sig_t = np.power(self.xsec['sig_t'], -1, where=non_zero)
         # Diffusion Coeff
-        diff_coef = np.power(3. * self.xsec['sig_t'], -1,
-                                 where=non_zero)
+        diff_coef = np.power(3. * self.xsec['sig_t'], -1, where=non_zero)
 
         self.derived.update({'diff_coef': diff_coef})
         self.derived.update({'inv_sig_t': inv_sig_t})
@@ -118,16 +116,16 @@ class _mat():
         # Calculate derived quantities based on fission properties
 
         if 'chi' in self.gconst and 'sig_f' in self.xsec:
-            vec_2 = self.prop['nu']*self.xsec['sig_f']
+            vec_2 = self.prop['nu'] * self.xsec['sig_f']
         elif 'nu_sig_f' in self.xsec:
             vec_2 = self.xsec['nu_sig_f']
         elif 'nu_sig_f' in self.gconst:
             vec_2 = self.gconst['nu_sig_f']
         else:
-            vec_2 = np.array([0,0])
-            
+            vec_2 = np.array([0, 0])
+
         chi_nu_sig_f = np.outer(self.gconst['chi'], vec_2)
-                                       
+
         self.derived.update({'chi_nu_sig_f': chi_nu_sig_f})
 
     def __derive_thermal__(self):
@@ -136,36 +134,36 @@ class _mat():
 
         # Slice scattering matrix based on g_thermal
         thermal = self.xsec['sig_s'][i:, i:]
-        th_d_i  = np.tril(thermal)
-        th_u    = np.triu(thermal, 1)
-        
-        total   = np.diag(self.xsec['sig_t'][i:])
+        th_d_i = np.tril(thermal)
+        th_u = np.triu(thermal, 1)
+
+        total = np.diag(self.xsec['sig_t'][i:])
         try:
             M = np.matmul(np.linalg.inv(total - th_d_i), th_u)
-            w,v = np.linalg.eig(M)
+            w, v = np.linalg.eig(M)
             ksi_ua = v[:, np.argmax(np.absolute(w))]
-            ksi_ua = ksi_ua/np.sum(ksi_ua)
+            ksi_ua = ksi_ua / np.sum(ksi_ua)
         except np.linalg.LinAlgError:
             warnings.warn("Matrix for thermal eigenvalue is singular," +
                           "setting value of ksi_ua to 0")
             ksi_ua = np.zeros(self.n_grps - i)
-        
+
         self.derived.update({'ksi_ua': ksi_ua})
 
     def __derive_xsec__(self):
         if 'sig_t' in self.xsec and 'sig_s' in self.xsec:
             sig_r = self.xsec['sig_t'] - np.diag(self.xsec['sig_s'])
-            self.xsec.update({'sig_r': sig_r })
-        
+            self.xsec.update({'sig_r': sig_r})
+
     def __parse_XML__(self, filename, grps):
         # Parse the XML file
 
         # These are the tags that identify the different sections of
         # the XML file. They are here to make it easy to change it in
         # the future.
-        tag_prop           = "prop"            # Phys. Properties
+        tag_prop = "prop"  # Phys. Properties
         tag_grp_structures = "grp_structures"  # Group structures
-        tag_xsec           = "xsec"            # Cross-sections
+        tag_xsec = "xsec"  # Cross-sections
 
         # Get data and root
         root = ET.parse(filename).getroot()
@@ -186,11 +184,11 @@ class _mat():
 
         # Find correct group structure, or throw error
         try:
-            grp_root = grp_structs.findall(".*[@n='" +
-                                           str(self.n_grps) + "']")[0]
+            grp_root = grp_structs.findall(".*[@n='" + str(self.n_grps) +
+                                           "']")[0]
         except IndexError:
             raise KeyError(filename + ": group structure for n=" +
-                             str(self.n_grps) + " not found")
+                           str(self.n_grps) + " not found")
 
         # Parse non cross-section constant data
         for el in grp_root:
@@ -223,24 +221,20 @@ class _mat():
         for key, a in self.xsec.iteritems():
             if np.shape(a) != (self.n_grps,) and\
                np.shape(a) != (self.n_grps, self.n_grps):
-                raise RuntimeError(filename +
-                               """: Cross-sections must have the
+                raise RuntimeError(filename + """: Cross-sections must have the
                                same dimensions, error with: """ + key)
 
         # Verify that all cross-sections are positive
-        if not all([np.all(m) for m in map(lambda x: x>=0,
-                                           self.xsec.values())]):
-            raise RuntimeError(filename +
-                               ': contains negative cross-section.')
+        if not all(
+            [np.all(m) for m in map(lambda x: x >= 0, self.xsec.values())]):
+            raise RuntimeError(filename + ': contains negative cross-section.')
 
         # Verify that g_thermal is not higher than the number of groups
         if 'g_thermal' in self.gconst:
             if self.gconst['g_thermal'] + 1 > self.n_grps:
-                raise RuntimeError(filename +
-                                   ': g_thermal > n_groups')
+                raise RuntimeError(filename + ': g_thermal > n_groups')
             if not self.gconst['g_thermal'].is_integer():
-                raise RuntimeError(filename +
-                                   ': g_thermal must be an integer')
+                raise RuntimeError(filename + ': g_thermal must be an integer')
 
     ## UTILITY FUNCTIONS =============================================
 
@@ -255,8 +249,8 @@ class _mat():
             except ValueError:
                 try:
                     # Try to convert to a matrix
-                    val = np.array([map(float, s.split(',')) for s in
-                                    el.text.split(';')])
+                    val = np.array(
+                        [map(float, s.split(',')) for s in el.text.split(';')])
                 # Just store the string
                 except ValueError:
                     val = el.text
@@ -270,8 +264,8 @@ class mat_lib():
 
         files: list of filenames to material xml files
         '''
-        self.mats = []       # Holds all materials
-        self._n_grps = n_grps # Energy groups
+        self.mats = []  # Holds all materials
+        self._n_grps = n_grps  # Energy groups
 
         for f in files:
             self.add(f, tr_scatt)
@@ -280,14 +274,13 @@ class mat_lib():
         """ Adds the material stored in filename to the library, if it
         is not already in there. """
 
-        new_mat = _mat(filename, grps = self._n_grps,
-                       tr_scatt=tr_scatt)
+        new_mat = _mat(filename, grps=self._n_grps, tr_scatt=tr_scatt)
 
         if new_mat.gen['id'] not in self.ids():
             self.mats.append(new_mat)
         else:
             raise RuntimeError("Cannot add file " + filename +
-                  ", mat_id already exists in material library")
+                               ", mat_id already exists in material library")
 
     def n_grps(self):
         return self._n_grps
@@ -296,14 +289,13 @@ class mat_lib():
         """ Returns the id's of stored materials """
         return [mat.gen['id'] for mat in self.mats]
 
-
     def get(self, prop, mat_id=''):
         """ Returns a dictionary with material ids as keys and the
         specified property as values"""
 
         if prop == 'n_grps':
             return self._n_grps
-        
+
         data = self.__mat_data__(prop)
 
         if mat_id:
@@ -316,10 +308,12 @@ class mat_lib():
 
     def get_per_str(self, *args, **kwargs):
         try:
-            return np.divide(self.get(*args, **kwargs), 4.0*np.pi)
+            return np.divide(self.get(*args, **kwargs), 4.0 * np.pi)
         except TypeError:
-            return {k: np.divide(v, 4.0*np.pi) for k, v
-                    in self.get(*args, **kwargs).iteritems()}
+            return {
+                k: np.divide(v, 4.0 * np.pi)
+                for k, v in self.get(*args, **kwargs).iteritems()
+            }
 
     def props(self, mat_id=None):
         data = {}
@@ -334,13 +328,21 @@ class mat_lib():
         data = {}
 
         for mat in self.mats:
-            data.update({mat.get('id') : mat.get(prop)})
+            data.update({mat.get('id'): mat.get(prop)})
 
         return data
 
+
 class mat_map():
-    def __init__(self, lib, layout, layout_dict, x_max, n, x_min=0,
-                 y_min=0, y_max=None):
+    def __init__(self,
+                 lib,
+                 layout,
+                 layout_dict,
+                 x_max,
+                 n,
+                 x_min=0,
+                 y_min=0,
+                 y_max=None):
         """ mat map will create a material map based on a string input
         map and problem parameters """
         x = [x_min, x_max]
@@ -355,13 +357,13 @@ class mat_map():
         except ValueError:
             raise ValueError("x and y domain limits must be numbers")
 
-        self.dx = x[1]/float(n)
-        self.dy = y[1]/float(n)
+        self.dx = x[1] / float(n)
+        self.dy = y[1] / float(n)
         self.n = int(n)
 
         #Generate layout
         # Split into words
-        split_layout = re.sub("[^\w]", " ",  layout).split()
+        split_layout = re.sub("[^\w]", " ", layout).split()
 
         # Verify a square number have been given
         n_dim = np.sqrt(len(split_layout))
@@ -371,40 +373,45 @@ class mat_map():
 
         n_dim = int(n_dim)
 
-        self.layout = [split_layout[i:i + n_dim] for i in
-                       range(0, len(split_layout), n_dim)]
+        self.layout = [
+            split_layout[i:i + n_dim]
+            for i in range(0, len(split_layout), n_dim)
+        ]
 
         self.array = self.__build_array__()
 
-    def plot(self): # pragma: no cover
+    def plot(self):  # pragma: no cover
         n = int(np.sqrt(len(self.array)))
         mat_set = list(set(self.array))
-        layout = [self.array[x:x+n] 
-                  for x in range(0,len(self.array), n)]
+        layout = [self.array[x:x + n] for x in range(0, len(self.array), n)]
         for j, s in enumerate(mat_set):
             for i, row in enumerate(layout):
-                layout[i] = [r.replace(s, str(j*10)) for r in row]
-        fl_array = np.flipud(np.array([map(float,row) for row in layout]))
+                layout[i] = [r.replace(s, str(j * 10)) for r in row]
+        fl_array = np.flipud(np.array([map(float, row) for row in layout]))
 
-        plt.figure(figsize=(6,6))
+        plt.figure(figsize=(6, 6))
         values = np.unique(fl_array)
-        im = plt.imshow(fl_array, interpolation='none', extent=[0,n,0,n])
-        colors = [ im.cmap(im.norm(value)) for value in values]
-        # create a patch (proxy artist) for every color 
-        patches = [ mpatches.Patch(color=colors[i], 
-                                   label="{l}".format(l=mat_set[int(values[i]/10.0)])) for i in range(len(values)) ]
+        im = plt.imshow(fl_array, interpolation='none', extent=[0, n, 0, n])
+        colors = [im.cmap(im.norm(value)) for value in values]
+        # create a patch (proxy artist) for every color
+        patches = [
+            mpatches.Patch(
+                color=colors[i],
+                label="{l}".format(l=mat_set[int(values[i] / 10.0)]))
+            for i in range(len(values))
+        ]
         # put those patched as legend-handles into the legend
-        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+        plt.legend(
+            handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
         plt.grid(True)
         plt.show()
-        
-        
+
     def get(self, prop, loc):
         # Get property from material at given location, loc is either
         # the index of the location k or a tuple of x and y
         if isinstance(loc, tuple):
-            k = int(loc[0]/self.dx) + int(loc[1]/self.dy)*self.n
+            k = int(loc[0] / self.dx) + int(loc[1] / self.dy) * self.n
         else:
             k = loc
 
@@ -417,8 +424,9 @@ class mat_map():
             for row in reversed(self.layout):
                 to_add = []
                 for col in row:
-                    to_add += int(1.0/len(row)*self.n)*[self.mat_dict[col]]
-                to_add = int(1.0/len(row)*self.n)*to_add
+                    to_add += int(
+                        1.0 / len(row) * self.n) * [self.mat_dict[col]]
+                to_add = int(1.0 / len(row) * self.n) * to_add
                 array += to_add
             return array
         except KeyError:
