@@ -77,4 +77,4 @@ class Eigen(object):
             # calculate keff error
             ek = abs((keff-keff_prev)/keff)
             # calculate error of scalar flux in eigen iterations
-            ep = max(equ_cls.calculate_sflx_diff(g) for g in xrange(n_grp))
+            ep = max(equ_cls.calculate_sflx_diff(sflxes_eig_prev, g) for g in xrange(n_grp))
