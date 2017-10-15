@@ -55,7 +55,7 @@ class NDA(Formulation):
             yield corr_vecs['x_comp'][g][i] * corx[i]
             # y-component
             # TODO: is this really supposed to be x_comp?
-            yield corr_vecs['x_comp'][g][i] * cory[i]
+            yield corr_vecs['y_comp'][g][i] * cory[i]
 
     def assemble_bilinear_forms(self, ho_cls=None, correction=False):
         '''@brief A function used to assemble bilinear forms of NDA for current
