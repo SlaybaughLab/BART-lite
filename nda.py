@@ -194,7 +194,7 @@ class NDA(Formulation):
         '''@brief A function used to update the scalar fluxes after upscattering
         acceleration
         '''
-        for g in xrange(self.g_thr, self._n_grp):
+        for g in xrange(self.g_thr(), self._n_grp):
             self._sflxes[g] += self._sflxes['ua']
 
     def clear_factorization(self):
