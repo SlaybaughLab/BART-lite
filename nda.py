@@ -140,7 +140,7 @@ class NDA(Formulation):
                 for gi in filter(lambda x: scaled_fiss_xsec[mid][g, x] > 1.0e-14,
                                  xrange(self._n_grp)):
                     sflx_vtx = self._sflxes[g][idx] if not sflxes_prev else \
-                               sflxes_prev[g][idx]
+                               sflxes_prev[gi][idx]
                     fiss_src += scaled_fiss_xsec[mid][g, gi] * np.dot(
                         self._elem.mass(), sflx_vtx)
                 self._fixed_rhses[g][idx] += fiss_src
