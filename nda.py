@@ -169,7 +169,7 @@ class NDA(Formulation):
         assert len(sflxes_old)==self._n_grp, \
         'old scalar fluxes should have the same number of groups as current scalar fluxes'
         mass = self._elem.mass()
-        self._sys_rhses['ua'] *= 0.0
+        self._sys_rhses['ua'] = np.zeros(self._n_dof)
         for cell in self._mesh.cells():
             idx, mid, scat_src_ua = cell.global_idx(), cell.get(
                 'id'), np.zeros(4)
