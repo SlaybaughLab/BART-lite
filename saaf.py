@@ -82,7 +82,6 @@ class SAAF(Formulation):
         matx += sigt * self._elem.mass()
         return matx
 
-
     def assemble_bilinear_forms(self):
         '''@brief Function used to assemble bilinear forms
 
@@ -291,3 +290,8 @@ class SAAF(Formulation):
             corrs['y_ua'] = np.dot(self._ksi_ua[mat_id],
                                    corrs['y_comp'][self._g_thr:, ])
         return corrs
+
+def _elements_of_elem_matrix():
+    """iterator over elements of elementary matrix. 
+    Note 4x4 only works for square elements & bilinar basis functions."""
+    return product(xrange(4), xrange(4))
