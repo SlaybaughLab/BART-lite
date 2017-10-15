@@ -99,21 +99,21 @@ class SAAF(Formulation):
                 # retrieving global indices and material id per cell
                 idx, mid = cell.global_idx(), cell.get('id')
                 # mapping local matrices to global
-                for ci, cj in product(xrange(4), xrange(4)):
+                for ci, cj in _elements_of_elem_matrix():
                     sys_mat[idx[ci], idx[cj]] += lhs_mats[mid][ci][cj]
                 # boundary part
-                if cell.bounds():
-                    # loop over
-                    for bd in cell.bounds().keys():
-                        if self._aq['bd_angle'][(bd, d)] > 0:
-                            #outgoing boundary assembly: retrieving omega*n and boundary mass matrices
-                            odn, bd_mass = self._aq['bd_angle'][(
-                                bd, d)], self._elem.bdmt()[bd]
-                            #print('dir: ',d,' bd: ',bd,' bd_angle: ',odn,' cell idx: ',cell.index())
-                            # mapping local vertices to global
-                            for ci, cj in product(xrange(4), xrange(4)):
-                                if bd_mass[ci][cj] > 1.0e-14:
-                                    sys_mat[idx[ci], idx[cj]] += odn * bd_mass[ci][cj]
+                if not cell.bounds():
+                    continue
+                # loop over
+                for bd in cell.bounds().keys():
+                    if self._aq['bd_angle'][(bd, d)] <= 0:
+                        continue
+                    #outgoing boundary assembly: retrieving omega*n and boundary mass matrices
+                    odn, bd_mass = self._aq['bd_angle'][(bd, d)], self._elem.bdmt()[bd]
+                    # mapping local vertices to global
+                    for ci, cj in _elements_of_elem_matrix():
+                        if bd_mass[ci][cj] > 1.0e-14:
+                            sys_mat[idx[ci], idx[cj]] += odn * bd_mass[ci][cj]
             '''
             # use this section only for generating sparsity pattern
             if i==0:
