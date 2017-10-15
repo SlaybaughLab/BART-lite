@@ -42,7 +42,6 @@ class MG(object):
         # Solve for fast and epithermal groups
         for g in xrange(0, g_thr):
             equ_cls.solve_in_group(g)
-            # equ_cls.generate_sflx(g) TODO: figure out what this is supposed to be
         # Solve for thermal groups
         e = 1.0
         while e > self._tol:

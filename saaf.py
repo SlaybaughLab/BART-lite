@@ -35,13 +35,11 @@ class SAAF(Formulation):
             k: np.zeros(self._n_dof)
             for k in xrange(self._n_tot)
         }
-        # get a component indexing mapping
-        self._comp = dict()
-        # component to group map
-        self._comp_grp = dict()
-        # component to direction map
-        self._comp_dir = dict()
-        self._generate_component_map()
+        # mappings
+        # TODO: change to bidirectional map
+        self._comp = {gd: ct for ct, gd in enumerate(self._group_dir_pairs())}
+        self._comp_grp = {ct: g for ct, (g,_) in enumerate(self._group_dir_pairs())}
+        self._comp_dir = {ct: d for ct, (_,d) in enumerate(self._group_dir_pairs())}
         # local vectors
         self._rhs_mats = self._preassembly_rhs()
         self._aflxes = {k: np.ones(self._n_dof) for k in xrange(self._n_tot)}
@@ -54,16 +52,6 @@ class SAAF(Formulation):
 
     def _group_dir_pairs(self):
         return product(xrange(self._n_grp), xrange(self._n_dir))
-
-    def _generate_component_map(self):
-        '''@brief Internal function used to generate mappings between component,
-        group and directions
-        '''
-        for ct, (g, d) in enumerate(self._group_dir_pairs()):
-            # TODO: change to bidirectional map
-            self._comp[(g, d)] = ct
-            self._comp_grp[ct] = g
-            self._comp_dir[ct] = d
 
     def _group_dir_rhs(self, g, d, isigts, sigts):
         '''RHS for each group and direction'''
