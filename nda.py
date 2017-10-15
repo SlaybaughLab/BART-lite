@@ -166,8 +166,8 @@ class NDA(Formulation):
     def _assemble_ua_linear_form(self, sflxes_old):
         '''@brief A function used to assemble linear form for upscattering acceleration
         '''
-        assert len(sflxes_old)==self._n_grp, \
-        'old scalar fluxes should have the same number of groups as current scalar fluxes'
+        #assert len(sflxes_old)==self._n_grp, \
+        #'old scalar fluxes should have the same number of groups as current scalar fluxes'
         mass = self._elem.mass()
         self._sys_rhses['ua'] = np.zeros(self._n_dof)
         for cell in self._mesh.cells():
