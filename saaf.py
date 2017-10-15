@@ -70,6 +70,19 @@ class SAAF(Formulation):
     def _preassembly_rhs(self):
         return {mid: self._material_rhs(mid) for mid in self._mids}
 
+    def _lhs_per_material(self, mid, g, d):
+        # get omega_i * omega_j combinations
+        oxox, oxoy, oyoy = self._aq['dir_prods'][d].values()
+        sigt, isigt = self._sigts[mid][g], self._isigts[mid][g]
+        # streaming lhs
+        matx = isigt * (oxox * self._elem.dxdx() + oxoy *
+                        (self._elem.dxdy() + self._elem.dydx()) +
+                        oyoy * self._elem.dydy())
+        # collision matrix
+        matx += sigt * self._elem.mass()
+        return matx
+
+
     def assemble_bilinear_forms(self):
         '''@brief Function used to assemble bilinear forms
 
@@ -77,23 +90,9 @@ class SAAF(Formulation):
         in NDA class
         '''
         # retrieve all the material properties
-        for i in xrange(self._n_tot):
-            # get the group and direction indices
-            g, d = self._comp_grp[i], self._comp_dir[i]
-            # get omega_i * omega_j combinations
-            oxox, oxoy, oyoy = self._aq['dir_prods'][d].values()
+        for g, d in self._group_dir_pairs():
             # dict containing lhs local matrices for all materials for component i
-            lhs_mats = dict()
-            for mid in self._mids:
-                sigt, isigt = self._sigts[mid][g], self._isigts[mid][g]
-                # streaming lhs
-                matx = isigt * (oxox * self._elem.dxdx() + oxoy *
-                                (self._elem.dxdy() + self._elem.dydx()) +
-                                oyoy * self._elem.dydy())
-                # collision matrix
-                matx += sigt * self._elem.mass()
-                lhs_mats[mid] = matx
-            # loop over cells for assembly
+            lhs_mats = {mid: self._lhs_per_material(mid, g, d) for mid in self._mids}
             # sys_mat: temp variable for system matrix for one component
             sys_mat = sps.lil_matrix((self._mesh.n_node(),
                                       self._mesh.n_node()))
@@ -124,7 +123,7 @@ class SAAF(Formulation):
                 plt.show()
             '''
             # transform lil_matrix to csc_matrix for efficient computation
-            self._sys_mats[i] = sps.csc_matrix(sys_mat)
+            self._sys_mats[g, d] = sps.csc_matrix(sys_mat)
 
     def assemble_fixed_linear_forms(self, sflxes_prev=None, nda_cls=None):
         '''@brief a function used to assemble fixed source or fission source on the
@@ -216,10 +215,12 @@ class SAAF(Formulation):
         This function is to be called along with NDA providing rhs
         '''
         self._assemble_linear_forms(nda_cls=nda_cls)
-        for i in xrange(self._n_tot):
+        for g, d in self._group_dir_pairs():
+            # TODO: remove i
+            i = self._comp[(g, d)]
             if i not in self._lu:
                 # factorization
-                self._lu[i] = sla.splu(self._sys_mats[i])
+                self._lu[i] = sla.splu(self._sys_mats[g, d])
             # direct solve for angular fluxes
             self._aflxes[i] = self._lu[i].solve(self._sys_rhses[i])
 
@@ -237,13 +238,13 @@ class SAAF(Formulation):
             self._assemble_group_linear_forms(g)
             # copy scalar flux
             np.copyto(self._sflx_ig_prev, self._sflxes[g])
-            self._sflxes[g] *= 0
+            self._sflxes[g] *= 0.0
             for d in xrange(self._n_dir):
                 # if not factorized, factorize the the HO matrices
                 cp = self._comp[(g, d)]
                 if cp not in self._lu:
                     print 'factorize SAAF for component ', cp
-                    self._lu[cp] = sla.splu(self._sys_mats[cp])
+                    self._lu[cp] = sla.splu(self._sys_mats[(g, d)])
                 # solve direction d
                 self._aflxes[cp] = self._lu[cp].solve(self._sys_rhses[cp])
                 self._sflxes[g] += self._aq['wt'][d] * self._aflxes[cp]
