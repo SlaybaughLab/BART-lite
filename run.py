@@ -43,15 +43,14 @@ def run():
     eigen_cls = Eigen()
     # construct HO solver
     ho_cls = SAAF(mat_cls=MAT_LIB, mesh_cls=MESH, prob_dict=problem)
-    if not do_nda:
-        # eigen solving
-        eigen_cls.do_iterations(ho_cls=ho_cls, nda_cls=None)
-    else:
-        # construct NDA solver
-        nda_cls = NDA(mat_cls=MAT_LIB, mesh_cls=MESH, prob_dict=problem)
-        # eigen solving
-        eigen_cls.do_iterations(ho_cls=ho_cls, nda_cls=nda_cls)
+    # construct NDA if do_nda
+    nda_cls = NDA(mat_cls=MAT_LIB, mesh_cls=MESH, prob_dict=problem) \
+        if do_nda else None
+    eigen_cls.do_iterations(ho_cls=ho_cls, nda_cls=nda_cls)
+
     # TODO: output and plotting functionality
+    ho_cls._mesh.soln_plot(ho_cls._sflxes[1])
 
+if __name__ == '__main__':
+    run()
 
-run()
