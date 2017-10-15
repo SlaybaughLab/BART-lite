@@ -101,9 +101,8 @@ class SAAF(Formulation):
                 # retrieving global indices and material id per cell
                 idx, mid = cell.global_idx(), cell.get('id')
                 # mapping local matrices to global
-                for ci in xrange(4):
-                    for cj in xrange(4):
-                        sys_mat[idx[ci], idx[cj]] += lhs_mats[mid][ci][cj]
+                for ci, cj in product(xrange(4), xrange(4)):
+                    sys_mat[idx[ci], idx[cj]] += lhs_mats[mid][ci][cj]
                 # boundary part
                 if cell.bounds():
                     # loop over
@@ -114,11 +113,9 @@ class SAAF(Formulation):
                                 bd, d)], self._elem.bdmt()[bd]
                             #print('dir: ',d,' bd: ',bd,' bd_angle: ',odn,' cell idx: ',cell.index())
                             # mapping local vertices to global
-                            for ci in xrange(4):
-                                for cj in xrange(4):
-                                    if bd_mass[ci][cj] > 1.0e-14:
-                                        sys_mat[idx[ci], idx[
-                                            cj]] += odn * bd_mass[ci][cj]
+                            for ci, cj in product(xrange(4), xrange(4)):
+                                if bd_mass[ci][cj] > 1.0e-14:
+                                    sys_mat[idx[ci], idx[cj]] += odn * bd_mass[ci][cj]
             '''
             # use this section only for generating sparsity pattern
             if i==0:
