@@ -139,7 +139,7 @@ class NDA(Formulation):
                     'id'), np.zeros(4)
                 for gi in filter(lambda x: scaled_fiss_xsec[mid][g, x] > 1.0e-14,
                                  xrange(self._n_grp)):
-                    sflx_vtx = self._sflxes[g][idx] if not sflxes_prev else \
+                    sflx_vtx = self._sflxes[g][idx] if sflxes_prev is None else \
                                sflxes_prev[gi][idx]
                     fiss_src += scaled_fiss_xsec[mid][g, gi] * np.dot(
                         self._elem.mass(), sflx_vtx)
