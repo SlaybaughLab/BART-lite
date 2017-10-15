@@ -123,6 +123,7 @@ class SAAF(Formulation):
             '''
             # transform lil_matrix to csc_matrix for efficient computation
             self._sys_mats[g, d] = sps.csc_matrix(sys_mat)
+        return self._sys_mats
 
     def assemble_fixed_linear_forms(self, sflxes_prev=None, nda_cls=None):
         '''@brief a function used to assemble fixed source or fission source on the
