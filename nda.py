@@ -37,7 +37,7 @@ class NDA(Formulation):
     def _create_diff_mats(self, streaming, mass):
         def diff_mats():
             # Elementary correction matrices
-            corx, cory, sigt, dcoef = self._elem.corx(), self._elem.cory(), 0, 0
+            corx, cory = self._elem.corx(), self._elem.cory()
             for g in xrange(self._n_grp):
                 self._sys_mats[g] = sps.lil_matrix((self._mesh.n_node(),
                                                     self._mesh.n_node()))
