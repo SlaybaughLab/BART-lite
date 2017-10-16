@@ -2,7 +2,6 @@ import numpy as np
 
 from elem import Elem
 
-
 class Formulation(object):
     def __init__(self, mat_cls, mesh_cls, prob_dict):
         self._name = 'Formulation'
