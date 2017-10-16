@@ -2,6 +2,7 @@ from itertools import product
 
 from nose.tools import *
 import numpy as np
+from numpy.linalg import cholesky
 
 import material
 import mesh
@@ -41,12 +42,20 @@ class TestSaaf:
         MESH = mesh.Mesh(problem['mesh_cells'], problem['domain_upper'], MAT_MAP)
 
         cls.saaf = SAAF(mat_cls=MAT_LIB, mesh_cls=MESH, prob_dict=problem)
+        cls.LHS = cls.saaf.assemble_bilinear_forms()
 
     def test_bilinear_symmetric(self):
-        # Check that LHS is symmetric
-        LHS = self.saaf.assemble_bilinear_forms()
-        ok_((LHS[g].transpose() == LHS[g] for g in xrange(len(LHS))), 
-           "Bilinear forms should be symmetric")
+        # Checks that SAAF LHS is symmetric
+        for gd in self.saaf._group_dir_pairs():
+            ok_((self.LHS[gd].transpose() != self.LHS[gd]).nnz == 0, 
+                "Bilinear forms should be symmetric")
+
+    def test_bilinear_positive_definite(self):
+        # Checks that SAAF LHS is positive definite
+        for gd in self.saaf._group_dir_pairs():
+            cholesky(self.LHS[gd].todense())
+
+
 
 
 
