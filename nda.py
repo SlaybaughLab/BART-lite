@@ -110,10 +110,11 @@ class NDA(Formulation):
 
                 # correction matrix for upscattering acceleration
                 cor_mat_ua = np.zeros((4, 4))
+                corx, cory = self._elem.corx(), self._elem.cory()
                 if correction:
-                    for i in xrange(len(corr_vecs[0])):
-                        cor_mat_ua += (corr_vecs['x_ua'][i] * corx[i] +
-                                       corr_vecs['y_ua'][i] * cory[i])
+                    for i, g in product(xrange(9), xrange(self._n_grp)):
+                        cor_mat_ua += (corr_vecs['x_comp'][g][i] * corx[i] +
+                                       corr_vecs['y_comp'][g][i] * cory[i])
                         diff_mats[('ua', mid)] += cor_mat_ua[ci, cj]
                 # mapping UA matrix to global
                 for ci in xrange(4):
