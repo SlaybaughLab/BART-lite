@@ -1,6 +1,0 @@
-[run]
-omit=./tests/*
-source=.
-
-[html]
-directory = htmlcov
