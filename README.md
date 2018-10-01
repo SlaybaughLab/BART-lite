@@ -1,4 +1,1 @@
-[![Build Status](https://travis-ci.org/SlaybaughLab/BART-lite.svg?branch=master)](https://travis-ci.org/SlaybaughLab/BART-lite)
-
-# BART-lite
-Python version of BART
+Code Unmaintained. Maintained version available at https://github.com/mzweig/gallo. 
